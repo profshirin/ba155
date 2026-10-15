@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ship It</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Layout: a shipping desk. Part 1 is a quote board (3 carriers x 3 cities) with a cost vs speed chart and a carrier scorecard. Part 2 is a timed dispatcher quiz with a reference card. */
+:root{
+  --bg:#F1F4F7; --panel:#FFFFFF; --ink:#0F1B2D; --muted:#5A6B80; --line:#D3DDE7;
+  --navy:#002E66; --teal:#00ACC1; --teal-ink:#007C8C; --kraft:#B7843F; --kraft-soft:#F6EEDF;
+  --c1:#002E66; --c2:#00A0B4; --c3:#C9562A;
+  --up:#1E8E5A; --up-soft:#E3F5EC; --down:#C8382B; --down-soft:#FCE8E6; --gold-soft:#FFF4D9;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1420; --panel:#122033; --ink:#E8EEF5; --muted:#9AAABD; --line:#24364D;
+  --navy:#8DB8FF; --teal:#35C8DB; --teal-ink:#5FD6E6; --kraft:#E0B06A; --kraft-soft:#33281A;
+  --c1:#8DB8FF; --c2:#35C8DB; --c3:#FF8A5B;
+  --up:#4CC98A; --up-soft:#173527; --down:#FF7A6B; --down-soft:#3D1D1A; --gold-soft:#3A2E12; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1420; --panel:#122033; --ink:#E8EEF5; --muted:#9AAABD; --line:#24364D;
+  --navy:#8DB8FF; --teal:#35C8DB; --teal-ink:#5FD6E6; --kraft:#E0B06A; --kraft-soft:#33281A;
+  --c1:#8DB8FF; --c2:#35C8DB; --c3:#FF8A5B;
+  --up:#4CC98A; --up-soft:#173527; --down:#FF7A6B; --down-soft:#3D1D1A; --gold-soft:#3A2E12; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;padding-inline:16px;padding-block:20px 48px}
+.wrap{max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.wrap>*{min-width:0}
+.wrap .wrap{margin:0;max-width:none;width:100%}
+h1,h2,h3{font-family:var(--display);line-height:1.05;margin:0;text-wrap:balance;color:var(--navy);text-transform:uppercase}
+h1{font-size:clamp(2.6rem,7vw,4.2rem);font-weight:700}
+h2{font-size:1.9rem;font-weight:700;letter-spacing:.02em}
+h3{font-size:1.25rem;font-weight:600;letter-spacing:.04em}
+p{margin:0}
+a{color:var(--teal-ink);font-weight:700}
+.eyebrow{font-family:var(--display);font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--kraft);font-size:.95rem}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;min-width:0}
+.panel>*{min-width:0}
+.muted{color:var(--muted)}
+.lead{max-width:65ch;font-size:1.08rem}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:16px}
+.grid2>*{min-width:0}
+button{font:inherit;cursor:pointer}
+.btn{font-family:var(--display);font-weight:700;font-size:1.15rem;text-transform:uppercase;letter-spacing:.06em;border:0;border-radius:8px;padding:12px 22px;background:var(--navy);color:var(--panel)}
+.btn.kraft{background:var(--kraft);color:#1a1206}
+.btn.alt{background:transparent;color:var(--navy);border:2px solid var(--navy)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+input[type=text],input[type=number]{font:inherit;padding:8px 10px;border:2px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);width:100%}
+input[type=range]{width:100%;accent-color:var(--kraft)}
+label.field{display:flex;flex-direction:column;gap:6px;font-weight:700}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+td,th{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-family:var(--display);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;font-size:.9rem;white-space:nowrap}
+.tablewrap{overflow-x:auto}
+.ok{color:var(--up);font-weight:700} .no{color:var(--down);font-weight:700}
+.err{color:var(--down);font-weight:700}
+.hint{background:var(--kraft-soft);border-radius:10px;padding:14px 16px}
+.label{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(170px,100%),1fr));gap:0;border:2px dashed var(--kraft);border-radius:10px;overflow:hidden}
+.label div{padding:12px 14px;border-right:1px dashed var(--line)}
+.label b{display:block;font-family:var(--display);font-size:1.5rem;color:var(--navy);line-height:1.1}
+.label span{font-size:.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.board td{vertical-align:middle}
+.board input{width:84px;padding:6px 8px}
+.cell{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.cell small{color:var(--muted)}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.9rem}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+svg text{font-family:var(--body)}
+.chartwrap{overflow-x:auto}
+.weights{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));gap:14px}
+.winner{border-radius:10px;padding:14px 16px;background:var(--up-soft)}
+.topbar{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:flex-end}
+.progress{height:8px;background:var(--line);border-radius:999px;overflow:hidden}
+.progress>i{display:block;height:100%;background:var(--kraft);width:0;transition:width .3s}
+.clock{font-family:var(--display);font-size:2.2rem;font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums;line-height:1}
+.qtext{font-size:1.12rem;max-width:70ch}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(160px,100%),1fr));gap:10px}
+.opt{border:2px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:14px 10px;font-weight:700;font-size:1.05rem}
+.opt:hover:not(:disabled){border-color:var(--kraft)}
+.opt:disabled{cursor:default;color:var(--ink)}
+.opt.right{background:var(--up-soft);border-color:var(--up)} .opt.wrong{background:var(--down-soft);border-color:var(--down)}
+.numin{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.numin input{width:160px;font-family:var(--display);font-size:1.6rem;font-weight:700;padding:6px 10px}
+.feedback{border-radius:10px;padding:14px 16px}
+.feedback.good{background:var(--up-soft)} .feedback.bad{background:var(--down-soft)}
+details.ref{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:12px 16px}
+details.ref summary{cursor:pointer;font-family:var(--display);font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--navy);font-size:1.1rem}
+.reftables{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:16px;margin-top:10px}
+.reftables td,.reftables th{padding:4px 8px;font-size:.9rem}
+.big{font-family:var(--display);font-size:clamp(3rem,10vw,5rem);font-weight:700;line-height:1;font-variant-numeric:tabular-nums;color:var(--navy)}
+.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.3rem;font-weight:700;letter-spacing:.06em;padding:10px 14px;border:2px dashed var(--navy);border-radius:8px;background:var(--panel);user-select:all;overflow-wrap:anywhere}
+tr.you td{background:var(--gold-soft);font-weight:700}
+.shot{font-family:var(--display);text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--teal-ink)}
+textarea{font:inherit;font-family:ui-monospace,Menlo,Consolas,monospace;width:100%;min-height:180px;padding:10px;border:2px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<section id="intro" class="wrap" style="gap:18px">
+  <div class="eyebrow">BA 155 · Sim 8 · Chapters 10 and 13</div>
+  <h1>Ship it</h1>
+  <p class="lead">Your Take it global brand is mailing free samples to three customers. You will price the same box with <b>USPS, UPS, and FedEx</b>, see how cost and speed trade off, and score the carriers to pick one. Then take a seat at the <b>dispatcher’s desk</b> for 12 quick questions on freight rates and mode choice. Highest score wins, and time breaks ties.</p>
+  <div class="label" aria-label="Shipping label">
+    <div><span>From</span><b>Cerritos, CA 90703</b></div>
+    <div><span>Box</span><b>12 × 10 × 8 in</b></div>
+    <div><span>Weight</span><b>5 lb</b></div>
+    <div><span>To</span><b>Sacramento · Chicago · New York</b></div>
+  </div>
+  <div class="hint"><b>Before you start.</b> Review freight class and dimensional weight in the Week 8 study notes. You get <b>one try</b> at the dispatcher’s desk, and the clock keeps running even if you close the page.</div>
+  <div class="panel" style="display:grid;gap:14px">
+    <label class="field" for="studentName">Your full name, as it appears in Canvas
+      <input type="text" id="studentName" autocomplete="name" placeholder="First and last name" style="max-width:360px">
+    </label>
+    <div class="row"><button class="btn kraft" id="startBtn">Start Part 1</button><span class="err" id="nameNote"></span></div>
+  </div>
+</section>
+
+<section id="quotes" class="wrap" style="gap:16px" hidden>
+  <div><div class="eyebrow">Part 1 of 2</div><h2>Get real quotes</h2></div>
+  <div class="panel" style="display:grid;gap:10px">
+    <h3>How to get your quotes</h3>
+    <ol style="margin:0;padding-left:1.2em;display:grid;gap:6px">
+      <li>Open each calculator. <a href="https://postcalc.usps.com/" target="_blank" rel="noopener">USPS</a> · <a href="https://wwwapps.ups.com/ctc/request?loc=en_US" target="_blank" rel="noopener">UPS</a> · <a href="https://www.fedex.com/en-us/online/rating.html" target="_blank" rel="noopener">FedEx</a></li>
+      <li>Ship from ZIP <b>90703</b> to <b>95814</b> (Sacramento), <b>60601</b> (Chicago), and <b>10001</b> (New York). Use a box of 12 by 10 by 8 inches that weighs 5 pounds.</li>
+      <li>Pick the ground service. That is <b>USPS Ground Advantage</b>, <b>UPS Ground</b>, and <b>FedEx Ground</b> or FedEx Home Delivery. Skip extras like insurance or pickup.</li>
+      <li>Type the price and the number of business days for each one below. No login is needed.</li>
+    </ol>
+  </div>
+  <div class="panel" style="display:grid;gap:14px">
+    <div class="tablewrap"><table class="board" id="board"></table></div>
+    <div class="row"><button class="btn" id="chartBtn">Chart my quotes</button><span class="err" id="qNote"></span></div>
+  </div>
+  <div id="p1out" class="wrap" style="gap:16px" hidden>
+    <div class="panel" style="display:grid;gap:10px">
+      <h3>Cost versus speed</h3>
+      <div class="legend" id="legend"></div>
+      <div class="chartwrap"><svg id="chart" role="img" aria-label="Scatter chart of price versus business days for each carrier and city"></svg></div>
+      <p class="muted" id="chartNote"></p>
+    </div>
+    <div class="panel" style="display:grid;gap:14px">
+      <h3>Carrier scorecard</h3>
+      <p class="muted">Cost and speed scores come from your quotes. The best carrier gets 5. Rate reliability and tracking yourself, 1 to 5, using reviews, news, or your own experience. Then set how much each factor matters.</p>
+      <div class="tablewrap"><table id="card"></table></div>
+      <div class="weights" id="weights"></div>
+      <div class="winner" id="winner"></div>
+      <div class="row"><button class="btn kraft" id="toDesk">On to the dispatcher’s desk</button><span class="muted">You can change your scorecard before you move on.</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="ready" class="wrap" style="gap:16px" hidden>
+  <div><div class="eyebrow">Part 2 of 2</div><h2>The dispatcher’s desk</h2></div>
+  <div class="panel" style="display:grid;gap:12px">
+    <p class="lead">Twelve questions. Some ask for a number, some ask you to pick. Price LTL pallets, catch dimensional weight, choose the right mode, and name the right charge.</p>
+    <div class="hint">Each question has one try. Your score is the number right out of 12. If two players tie, the faster time wins. A reference card with the density guide and the rate table stays open while you work. Keep a calculator handy.</div>
+    <div class="row"><button class="btn kraft" id="goBtn">Start the clock</button></div>
+  </div>
+</section>
+
+<section id="quiz" class="wrap" style="gap:16px" hidden>
+  <div class="topbar">
+    <div><div class="eyebrow">Dispatcher’s desk</div><h2 id="qLbl">Question 1</h2></div>
+    <div style="text-align:right"><div class="muted" style="font-size:.85rem;text-transform:uppercase;letter-spacing:.05em">Score · Time</div><div class="clock"><span id="scoreNow">0</span> · <span id="clock">0:00</span></div></div>
+  </div>
+  <div class="progress" aria-hidden="true"><i id="prog"></i></div>
+  <div class="panel" style="display:grid;gap:16px" id="qPanel"></div>
+  <details class="ref" open><summary>Reference card</summary><div class="reftables" id="ref"></div></details>
+</section>
+
+<section id="res" class="wrap" style="gap:16px" hidden>
+  <div><div class="eyebrow">Results</div><h2 id="who"></h2><p class="muted" id="lockedNote"></p></div>
+  <div class="grid2">
+    <div class="panel" style="display:grid;gap:6px">
+      <span class="muted" style="text-transform:uppercase;letter-spacing:.05em;font-size:.85rem">Dispatcher score</span>
+      <div class="big" id="total"></div>
+      <p id="verdict"></p>
+    </div>
+    <div class="panel" style="display:grid;gap:10px">
+      <span class="muted" style="text-transform:uppercase;letter-spacing:.05em;font-size:.85rem">Your result code</span>
+      <div class="code" id="code"></div>
+      <p class="muted" style="font-size:.92rem">Copy this code, your quotes, and your carrier pick into the Sim 8 template. Highest score wins, and time breaks ties.</p>
+      <div class="row"><button class="btn alt" id="copyBtn">Copy code</button><span class="muted" id="copied"></span></div>
+    </div>
+  </div>
+  <div class="panel" style="display:grid;gap:10px"><h3>Your quotes and carrier pick</h3><div id="p1res"></div></div>
+  <div class="panel"><h3 style="margin-bottom:8px">Your answers</h3><div class="tablewrap"><table id="ans"></table></div></div>
+  <p class="shot">Copy your quotes, carrier pick, and result code into the Sim 8 template. No screenshot needed.</p>
+</section>
+
+<section id="verify" class="wrap" style="gap:16px" hidden>
+  <div><div class="eyebrow">Instructor tools</div><h2>Check codes and rank players</h2>
+  <p class="muted">Paste one student per line as <b>Name, code</b>. Names must match what students typed.</p></div>
+  <label class="field" for="vin">Names and codes<textarea id="vin" spellcheck="false"></textarea></label>
+  <div class="row"><button class="btn kraft" id="vbtn">Check and rank</button></div>
+  <div class="panel"><div class="tablewrap"><table id="vout"><tr><td class="muted">Your ranked list will show here.</td></tr></table></div></div>
+</section>
+
+</div>
+
+<script>
+(function(){
+  const LOCK='ba155-shipit-v1', SALT='SHIPIT26';
+  const $=id=>document.getElementById(id);
+  const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const show=id=>{['intro','quotes','ready','quiz','res','verify'].forEach(s=>$(s).hidden=s!==id);window.scrollTo(0,0);};
+  const money=v=>'$'+Number(v).toFixed(2);
+
+  /* ---------- Part 1 ---------- */
+  const CARRIERS=[{k:'usps',n:'USPS',s:'Ground Advantage',c:'var(--c1)'},{k:'ups',n:'UPS',s:'Ground',c:'var(--c2)'},{k:'fedex',n:'FedEx',s:'Ground or Home Delivery',c:'var(--c3)'}];
+  const CITIES=[{k:'sac',n:'Sacramento',z:'95814',shape:'circle'},{k:'chi',n:'Chicago',z:'60601',shape:'square'},{k:'nyc',n:'New York',z:'10001',shape:'diamond'}];
+  function buildBoard(){
+    $('board').innerHTML='<tr><th>Carrier</th>'+CITIES.map(c=>'<th>'+c.n+' '+c.z+'<br><span style="font-weight:400;text-transform:none;letter-spacing:0">Price $ · Business days</span></th>').join('')+'</tr>'+
+      CARRIERS.map(r=>'<tr><td><span class="sw" style="background:'+r.c+'"></span><b>'+r.n+'</b><br><small class="muted">'+r.s+'</small></td>'+
+        CITIES.map(c=>'<td><div class="cell"><input type="number" step="0.01" min="0" inputmode="decimal" id="p_'+r.k+'_'+c.k+'" aria-label="'+r.n+' price to '+c.n+'" placeholder="$"><input type="number" step="1" min="1" inputmode="numeric" id="d_'+r.k+'_'+c.k+'" aria-label="'+r.n+' business days to '+c.n+'" placeholder="days" style="width:70px"></div></td>').join('')+'</tr>').join('');
+  }
+  buildBoard();
+  function readQuotes(){
+    const Q={};
+    for(const r of CARRIERS){Q[r.k]={};for(const c of CITIES){
+      const p=parseFloat($('p_'+r.k+'_'+c.k).value), d=parseInt($('d_'+r.k+'_'+c.k).value,10);
+      if(!(p>0)||!(d>0)) return {err:'Please fill in every price and every number of days.'};
+      if(p<3||p>200) return {err:'A price of '+money(p)+' looks off for '+r.n+' to '+c.n+'. Please check it.'};
+      if(d>10) return {err:'Ground shipping in the U.S. takes 10 business days or less. Please check '+r.n+' to '+c.n+'.'};
+      Q[r.k][c.k]={p:Math.round(p*100)/100,d};
+    }}
+    return Q;
+  }
+  function fillQuotes(Q){for(const r of CARRIERS)for(const c of CITIES){$('p_'+r.k+'_'+c.k).value=Q[r.k][c.k].p;$('d_'+r.k+'_'+c.k).value=Q[r.k][c.k].d;}}
+  const avg=a=>a.reduce((x,y)=>x+y,0)/a.length;
+  function stats(Q){return CARRIERS.map(r=>({k:r.k,n:r.n,c:r.c,p:avg(CITIES.map(c=>Q[r.k][c.k].p)),d:avg(CITIES.map(c=>Q[r.k][c.k].d))}));}
+
+  function drawChart(Q,svgId){
+    const svg=$(svgId),W=820,H=320,m={l:56,r:20,t:16,b:48};
+    svg.setAttribute('viewBox','0 0 '+W+' '+H);svg.setAttribute('width',W);svg.setAttribute('height',H);svg.style.maxWidth='100%';svg.style.height='auto';
+    const pts=[];CARRIERS.forEach(r=>CITIES.forEach(c=>pts.push({r,c,p:Q[r.k][c.k].p,d:Q[r.k][c.k].d})));
+    const maxD=Math.max(6,...pts.map(q=>q.d)), maxP=Math.ceil(Math.max(10,...pts.map(q=>q.p))/5)*5;
+    const x=d=>m.l+(d)*(W-m.l-m.r)/(maxD+0.5), y=p=>m.t+(H-m.t-m.b)*(1-p/maxP);
+    let g='';const stepP=maxP<=30?5:10;
+    for(let v=0;v<=maxP;v+=stepP) g+='<line x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="var(--line)"/><text x="'+(m.l-8)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="12" fill="var(--muted)">$'+v+'</text>';
+    for(let d=1;d<=maxD;d++) g+='<text x="'+x(d)+'" y="'+(H-m.b+18)+'" text-anchor="middle" font-size="12" fill="var(--muted)">'+d+'</text>';
+    g+='<text x="'+((W+m.l)/2)+'" y="'+(H-8)+'" text-anchor="middle" font-size="13" fill="var(--muted)">Business days in transit, faster is left</text>';
+    const seen={};
+    pts.forEach(q=>{const key=q.d+'_'+Math.round(q.p);const o=(seen[key]=(seen[key]||0)+1)-1;const cx=x(q.d)+o*10-((o>0)?5:0),cy=y(q.p);
+      if(q.c.shape==='circle') g+='<circle cx="'+cx+'" cy="'+cy+'" r="7" fill="'+q.r.c+'"><title>'+q.r.n+' to '+q.c.n+', '+money(q.p)+', '+q.d+' days</title></circle>';
+      else if(q.c.shape==='square') g+='<rect x="'+(cx-6.5)+'" y="'+(cy-6.5)+'" width="13" height="13" fill="'+q.r.c+'"><title>'+q.r.n+' to '+q.c.n+', '+money(q.p)+', '+q.d+' days</title></rect>';
+      else g+='<polygon points="'+cx+','+(cy-9)+' '+(cx+9)+','+cy+' '+cx+','+(cy+9)+' '+(cx-9)+','+cy+'" fill="'+q.r.c+'"><title>'+q.r.n+' to '+q.c.n+', '+money(q.p)+', '+q.d+' days</title></polygon>';});
+    svg.innerHTML=g;
+    return '<span><i class="sw" style="background:var(--c1)"></i>USPS</span><span><i class="sw" style="background:var(--c2)"></i>UPS</span><span><i class="sw" style="background:var(--c3)"></i>FedEx</span><span>● Sacramento</span><span>■ Chicago</span><span>◆ New York</span>';
+  }
+
+  const FACTORS=[{k:'cost',n:'Cost'},{k:'speed',n:'Speed'},{k:'rel',n:'Reliability'},{k:'trk',n:'Tracking and convenience'}];
+  function scorecard(Q,card){
+    const st=stats(Q), minP=Math.min(...st.map(s=>s.p)), minD=Math.min(...st.map(s=>s.d));
+    const wsum=FACTORS.reduce((a,f)=>a+card.w[f.k],0)||1;
+    return st.map(s=>{const sc={cost:5*minP/s.p,speed:5*minD/s.d,rel:card.r[s.k].rel,trk:card.r[s.k].trk};
+      const tot=FACTORS.reduce((a,f)=>a+sc[f.k]*card.w[f.k],0)/wsum; return {...s,sc,tot};});
+  }
+  function defaultCard(){const r={};CARRIERS.forEach(c=>r[c.k]={rel:4,trk:4});return {w:{cost:4,speed:3,rel:2,trk:1},r};}
+  function renderCard(){
+    const rows=scorecard(S.quotes,S.card);
+    $('card').innerHTML='<tr><th>Carrier</th><th>Avg price</th><th>Avg days</th><th>Cost score</th><th>Speed score</th><th>Reliability</th><th>Tracking</th><th>Total</th></tr>'+
+      rows.map(s=>'<tr><td><span class="sw" style="background:'+s.c+'"></span><b>'+s.n+'</b></td><td>'+money(s.p)+'</td><td>'+s.d.toFixed(1)+'</td><td>'+s.sc.cost.toFixed(2)+'</td><td>'+s.sc.speed.toFixed(2)+'</td>'+
+        '<td><input type="number" min="1" max="5" step="1" data-k="'+s.k+'" data-f="rel" value="'+S.card.r[s.k].rel+'" style="width:64px" aria-label="'+s.n+' reliability"></td>'+
+        '<td><input type="number" min="1" max="5" step="1" data-k="'+s.k+'" data-f="trk" value="'+S.card.r[s.k].trk+'" style="width:64px" aria-label="'+s.n+' tracking"></td><td><b>'+s.tot.toFixed(2)+'</b></td></tr>').join('');
+    $('card').querySelectorAll('input').forEach(i=>i.addEventListener('change',()=>{let v=parseInt(i.value,10);if(!(v>=1))v=1;if(v>5)v=5;S.card.r[i.dataset.k][i.dataset.f]=v;save();renderCard();}));
+    const best=rows.slice().sort((a,b)=>b.tot-a.tot)[0]; S.pick=best.n; save();
+    $('winner').innerHTML='<b>Your scorecard picks '+best.n+'</b> with '+best.tot.toFixed(2)+' out of 5. Change the weights or ratings to test how sensitive your choice is.';
+  }
+  function renderWeights(){
+    const wsum=FACTORS.reduce((a,f)=>a+S.card.w[f.k],0)||1;
+    $('weights').innerHTML=FACTORS.map(f=>'<label class="field" for="w_'+f.k+'">'+f.n+' <span class="muted" style="font-weight:400">weight '+Math.round(S.card.w[f.k]/wsum*100)+'%</span><input type="range" min="0" max="10" step="1" id="w_'+f.k+'" value="'+S.card.w[f.k]+'"></label>').join('');
+    FACTORS.forEach(f=>$('w_'+f.k).addEventListener('change',e=>{S.card.w[f.k]=+e.target.value;save();renderWeights();renderCard();}));
+  }
+  function p1Summary(){
+    const st=stats(S.quotes), cheap=st.slice().sort((a,b)=>a.p-b.p)[0], fast=st.slice().sort((a,b)=>a.d-b.d)[0];
+    return {cheap,fast,txt:(cheap.k===fast.k?cheap.n+' was both the cheapest and the fastest on average. Lucky you!':cheap.n+' was cheapest on average, but '+fast.n+' was fastest. That is the cost and speed trade off.')+' Notice how price and days grow as the box travels farther.'};
+  }
+
+  /* ---------- Part 2 ---------- */
+  const DENS=[[50,50],[35,55],[30,60],[22.5,65],[15,70],[13.5,77.5],[12,85],[10.5,92.5],[9,100],[8,110],[7,125],[6,150],[5,175],[4,200],[3,250],[2,300],[1,400],[0,500]];
+  const RATE={50:18,55:20,60:22,65:24,70:26,77.5:28,85:31,92.5:34,100:37,110:41,125:46,150:54,175:62,200:70,250:86,300:100,400:130,500:160};
+  $('ref').innerHTML='<div><b>Density guide</b><table><tr><th>Pounds per cubic foot</th><th>Class</th></tr>'+DENS.map((d,i)=>'<tr><td>'+(i===0?'50 or more':d[0]+' to under '+DENS[i-1][0])+'</td><td>'+d[1]+'</td></tr>').join('')+'</table></div>'+
+    '<div><b>Sample LTL rates, Cerritos to Phoenix</b><table><tr><th>Class</th><th>Rate per 100 lb</th></tr>'+Object.keys(RATE).map(Number).sort((a,b)=>a-b).map(k=>'<tr><td>'+k+'</td><td>$'+RATE[k]+'</td></tr>').join('')+'</table>'+
+    '<p class="muted" style="font-size:.85rem;margin-top:8px">Cubic feet = L × W × H in inches ÷ 1,728. Density = weight ÷ cubic feet. Charge = weight ÷ 100 × rate. Dimensional weight = L × W × H ÷ 139, rounded up.</p></div>';
+  const QS=[
+    {t:'num',q:'A pallet of canned boba drinks is 48 × 40 × 40 inches and weighs 700 pounds. What is its density in pounds per cubic foot? Round to one decimal.',a:15.75,tol:0.1,f:'Cubic feet = 48 × 40 × 40 ÷ 1,728 = 44.4. Density = 700 ÷ 44.4 = 15.75 pounds per cubic foot.',s:'Density of the drinks pallet'},
+    {t:'mc',q:'Using the density guide, what freight class is that drinks pallet?',o:['65','70','77.5','85'],a:'70',f:'A density of 15.75 falls in the 15 to 22.5 band, which is class 70.',s:'Class of the drinks pallet'},
+    {t:'num',q:'Using the sample rate table, what does it cost to ship the 700 pound drinks pallet? Enter dollars.',a:182,tol:0.5,f:'Class 70 is $26 per 100 pounds. 700 ÷ 100 × $26 = $182.',s:'Charge for the drinks pallet'},
+    {t:'mc',q:'A pallet of patio chairs is 48 × 40 × 72 inches and weighs 360 pounds. What freight class is it?',o:['85','125','200','300'],a:'200',f:'Cubic feet = 48 × 40 × 72 ÷ 1,728 = 80. Density = 360 ÷ 80 = 4.5, which is class 200. Light, bulky freight gets a high class.',s:'Class of the chairs pallet'},
+    {t:'num',q:'What does it cost to ship the 360 pound pallet of patio chairs? Enter dollars.',a:252,tol:0.5,f:'Class 200 is $70 per 100 pounds. 360 ÷ 100 × $70 = $252. The chairs weigh about half as much as the drinks but cost more to ship!',s:'Charge for the chairs pallet'},
+    {t:'num',q:'Your Part 1 box is 12 × 10 × 8 inches and weighs 5 pounds. UPS divides by 139 for dimensional weight and rounds up. How many pounds will UPS bill you for?',a:7,tol:0,f:'12 × 10 × 8 = 960. 960 ÷ 139 = 6.9, rounded up to 7. Seven is more than the real 5 pounds, so you pay for 7.',s:'Billable weight of the Part 1 box'},
+    {t:'mc',q:'A power plant in Texas needs 40,000 tons of coal from Wyoming every month. Which mode fits best?',o:['Truck','Rail','Air','Pipeline'],a:'Rail',f:'Rail is the low cost choice for heavy, bulky loads over long distances on land.',s:'Mode for coal from Wyoming'},
+    {t:'mc',q:'A sushi chain in Los Angeles needs fresh tuna from Tokyo within two days. Which mode fits best?',o:['Water','Rail','Air','Truck'],a:'Air',f:'Air is the only mode fast enough across the Pacific for perishable, high value food.',s:'Mode for fresh tuna from Tokyo'},
+    {t:'mc',q:'A warehouse in Ontario, California sends two pallets of boba cups to a shop in Phoenix. Which service fits best?',o:['Truckload','Less than truckload','Rail carload','Air freight'],a:'Less than truckload',f:'Two pallets will not fill a truck. LTL lets you share the truck and pay only for your space.',s:'Service for two pallets to Phoenix'},
+    {t:'mc',q:'A shipper keeps a railcar five days past the free time to unload it. The railroad charges a daily fee called',o:['Detention','Demurrage','Diversion','Reconsignment'],a:'Demurrage',f:'Demurrage is the daily charge for holding railcars or containers too long. Detention is the trucking version.',s:'Daily fee for holding a railcar'},
+    {t:'mc',q:'At a Costco depot, goods arrive on supplier trucks and leave for the stores the same day without being stored. This is called',o:['Batch picking','Cross-docking','Wave picking','Variable slotting'],a:'Cross-docking',f:'Cross-docking moves goods straight from inbound to outbound trucks with little or no storage.',s:'Same day transfer at a depot'},
+    {t:'mc',q:'A box arrives looking perfect, but the glass inside is broken. This is called',o:['Concealed damage','Demurrage','A freight bill error','Cubing out'],a:'Concealed damage',f:'Concealed damage is hidden inside a box that looked fine. Report it to the carrier quickly to file a freight claim.',s:'Hidden damage in a good box'}
+  ];
+  const N=QS.length;
+  if(window.innerWidth<700) document.querySelector('details.ref').removeAttribute('open');
+
+  /* ---------- code ---------- */
+  function checksum(s){let h=7;for(let i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))%1679616;}return h.toString(36).toUpperCase().padStart(4,'0');}
+  const norm=s=>s.toUpperCase().replace(/\s+/g,' ').trim();
+  const makeCode=(nm,sc,t)=>'SHP-'+sc+'-'+t+'-'+checksum(norm(nm)+'|'+sc+'|'+t+'|'+SALT);
+  function readLock(){try{const v=localStorage.getItem(LOCK);return v?JSON.parse(v):null;}catch(e){return null;}}
+  function writeLock(o){try{localStorage.setItem(LOCK,JSON.stringify(o));}catch(e){}}
+  const fmt=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+
+  let S=null,timer=null;
+  const save=()=>writeLock(S);
+  const score=()=>S.ans.filter(a=>a.ok).length;
+  const elapsed=()=>S.end?S.end:Math.round((Date.now()-S.t0)/1000);
+
+  $('startBtn').addEventListener('click',()=>{
+    const nm=$('studentName').value.trim();
+    if(nm.split(/\s+/).length<2){$('nameNote').textContent='Please enter your first and last name.';$('studentName').focus();return;}
+    S={name:nm,quotes:null,card:defaultCard(),pick:null,t0:null,ans:[],end:null}; save(); show('quotes');
+  });
+  function showP1(){
+    $('p1out').hidden=false;
+    $('legend').innerHTML=drawChart(S.quotes,'chart');
+    $('chartNote').textContent=p1Summary().txt;
+    renderWeights(); renderCard();
+  }
+  $('chartBtn').addEventListener('click',()=>{
+    const Q=readQuotes(); if(Q.err){$('qNote').textContent=Q.err;return;}
+    $('qNote').textContent=''; S.quotes=Q; save(); showP1();
+    $('p1out').scrollIntoView({behavior:'smooth',block:'start'});
+  });
+  $('toDesk').addEventListener('click',()=>show('ready'));
+  $('goBtn').addEventListener('click',()=>{if(!S.t0){S.t0=Date.now();save();}startQuiz();});
+
+  function startQuiz(){show('quiz');clearInterval(timer);timer=setInterval(()=>{$('clock').textContent=fmt(elapsed());},500);renderQ();}
+  function renderQ(){
+    const i=S.ans.length; if(i>=N){finish();return;}
+    const q=QS[i];
+    $('qLbl').innerHTML='Question '+(i+1)+' <span class="muted" style="font-size:1.2rem">of '+N+'</span>';
+    $('prog').style.width=(i/N*100)+'%'; $('scoreNow').textContent=score(); $('clock').textContent=fmt(elapsed());
+    const P=$('qPanel');
+    if(q.t==='mc'){
+      P.innerHTML='<p class="qtext">'+q.q+'</p><div class="opts">'+q.o.map(o=>'<button class="opt" data-v="'+esc(o)+'">'+esc(o)+'</button>').join('')+'</div><div id="fb"></div>';
+      P.querySelectorAll('.opt').forEach(b=>b.addEventListener('click',()=>answer(b.dataset.v)));
+    } else {
+      P.innerHTML='<p class="qtext">'+q.q+'</p><div class="numin"><input type="number" step="any" inputmode="decimal" id="numA" aria-label="Your answer"><button class="btn" id="numBtn">Lock it in</button><span class="err" id="numNote"></span></div><div id="fb"></div>';
+      const go=()=>{const v=parseFloat($('numA').value);if(!Number.isFinite(v)){$('numNote').textContent='Type a number.';return;}answer(v);};
+      $('numBtn').addEventListener('click',go); $('numA').addEventListener('keydown',e=>{if(e.key==='Enter')go();}); $('numA').focus();
+    }
+  }
+  function answer(v){
+    const i=S.ans.length; if(i>=N) return; const q=QS[i];
+    const ok=q.t==='mc'?v===q.a:Math.abs(v-q.a)<=q.tol+1e-9;
+    S.ans.push({v,ok}); if(S.ans.length===N) S.end=Math.round((Date.now()-S.t0)/1000); save();
+    if(q.t==='mc') $('qPanel').querySelectorAll('.opt').forEach(b=>{b.disabled=true;if(b.dataset.v===q.a)b.classList.add('right');else if(b.dataset.v===v)b.classList.add('wrong');});
+    else {$('numA').disabled=true;$('numBtn').disabled=true;}
+    $('scoreNow').textContent=score();
+    const last=S.ans.length>=N;
+    $('fb').innerHTML='<div class="feedback '+(ok?'good':'bad')+'" style="display:grid;gap:10px"><p><b>'+(ok?'Correct!':'Not quite.')+'</b> '+(q.t==='num'&&!ok?'The answer is '+q.a+'. ':'')+q.f+'</p><div><button class="btn" id="nextBtn">'+(last?'See my results':'Next question')+'</button></div></div>';
+    $('nextBtn').focus(); $('nextBtn').addEventListener('click',renderQ);
+  }
+  function p1ResultHTML(){
+    if(!S.quotes) return '<p class="muted">No quotes logged.</p>';
+    const rows=CARRIERS.map(r=>'<tr><td><span class="sw" style="background:'+r.c+'"></span><b>'+r.n+'</b></td>'+CITIES.map(c=>'<td>'+money(S.quotes[r.k][c.k].p)+' · '+S.quotes[r.k][c.k].d+' days</td>').join('')+'</tr>').join('');
+    const sc=scorecard(S.quotes,S.card).sort((a,b)=>b.tot-a.tot);
+    return '<div class="tablewrap"><table><tr><th>Carrier</th>'+CITIES.map(c=>'<th>'+c.n+'</th>').join('')+'</tr>'+rows+'</table></div>'+
+      '<p>'+p1Summary().txt+'</p><div class="winner"><b>Carrier pick, '+esc(S.pick||sc[0].n)+'.</b> Scorecard totals '+sc.map(s=>s.n+' '+s.tot.toFixed(2)).join(', ')+'. Weights '+FACTORS.map(f=>f.n.toLowerCase()+' '+S.card.w[f.k]).join(', ')+'.</div>';
+  }
+  function finish(note){
+    clearInterval(timer);
+    const sc=score(), t=S.end||elapsed();
+    $('who').textContent=S.name+'’s shipping report';
+    $('lockedNote').textContent=note||'';
+    $('total').innerHTML=sc+'<span class="muted" style="font-size:.45em"> / '+N+'</span>';
+    $('verdict').innerHTML='Time <b>'+fmt(t)+'</b>. '+(sc===N?'A perfect desk. You could run a freight office!':sc>=10?'Excellent dispatching.':sc>=7?'Solid work. Review the freight math before Quiz 4.':'Freight pricing is tricky. Rework the questions you missed before Quiz 4.');
+    $('code').textContent=makeCode(S.name,sc,t);
+    $('p1res').innerHTML=p1ResultHTML();
+    $('ans').innerHTML='<tr><th>#</th><th>Question</th><th>You said</th><th>Answer</th><th></th></tr>'+QS.map((q,k)=>{const a=S.ans[k];return '<tr><td>'+(k+1)+'</td><td>'+q.s+'</td><td>'+(a?esc(a.v):'')+'</td><td>'+q.a+'</td><td class="'+(a&&a.ok?'ok':'no')+'">'+(a&&a.ok?'Right':'Missed')+'</td></tr>';}).join('');
+    show('res');
+  }
+  $('copyBtn').addEventListener('click',()=>{
+    const t=$('code').textContent;
+    const sel=()=>{const r=document.createRange();r.selectNodeContents($('code'));const s=getSelection();s.removeAllRanges();s.addRange(r);$('copied').textContent='Press Ctrl+C or Command+C to copy.';};
+    try{navigator.clipboard.writeText(t).then(()=>{$('copied').textContent='Copied.';},sel);}catch(e){sel();}
+  });
+
+  $('vbtn').addEventListener('click',()=>{
+    const rows=$('vin').value.split(/\n/).map(l=>l.trim()).filter(Boolean).map(l=>{
+      const i=l.lastIndexOf(','); if(i<0) return {name:l,ok:false};
+      const nm=l.slice(0,i).trim(), code=l.slice(i+1).trim().toUpperCase();
+      const m=code.match(/^SHP-(\d+)-(\d+)-([0-9A-Z]{4})$/); if(!m) return {name:nm,ok:false};
+      return {name:nm,ok:checksum(norm(nm)+'|'+m[1]+'|'+m[2]+'|'+SALT)===m[3],sc:+m[1],t:+m[2]};
+    });
+    rows.sort((a,b)=>(b.ok-a.ok)||((b.sc??-1)-(a.sc??-1))||((a.t??1e9)-(b.t??1e9)));
+    let r=0;
+    $('vout').innerHTML='<tr><th>Rank</th><th>Name</th><th>Score</th><th>Time</th><th>Code check</th></tr>'+rows.map(x=>{if(x.ok)r++;return '<tr><td>'+(x.ok?r:'')+'</td><td>'+esc(x.name)+'</td><td>'+(x.sc!=null?x.sc+' / '+N:'')+'</td><td>'+(x.t!=null?fmt(x.t):'')+'</td><td class="'+(x.ok?'ok':'no')+'">'+(x.ok?'Valid':'Does not match')+'</td></tr>';}).join('');
+  });
+  if(location.hash==='#verify'){show('verify');return;}
+
+  const saved=readLock();
+  if(saved&&saved.name){
+    S=saved; if(!S.card) S.card=defaultCard();
+    if(S.ans&&S.ans.length>=N) finish('You already played on this device. This is your saved result.');
+    else if(S.t0) startQuiz();
+    else { $('studentName').value=S.name; show('quotes'); if(S.quotes){fillQuotes(S.quotes);showP1();} }
+  }
+})();
+</script>
+</body>
+</html>
