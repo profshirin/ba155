@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Follow the Ship</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Layout: a ship's log. Part 1 logs a real ship, Part 2 is a 16 item Incoterms showdown on a route strip, results show the log, the score, and a cheat sheet. */
+:root{
+  --bg:#EEF3F7; --panel:#FFFFFF; --ink:#0F1B2D; --muted:#5A6B80; --line:#D3DDE7;
+  --navy:#002E66; --teal:#00ACC1; --teal-ink:#007C8C; --sea:#D8EEF4;
+  --box:#D9622B; --box-soft:#FCEBE2;
+  --up:#1E8E5A; --up-soft:#E3F5EC; --down:#C8382B; --down-soft:#FCE8E6; --gold:#D9A21B; --gold-soft:#FFF4D9;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1420; --panel:#122033; --ink:#E8EEF5; --muted:#9AAABD; --line:#24364D;
+  --navy:#8DB8FF; --teal:#35C8DB; --teal-ink:#5FD6E6; --sea:#123247;
+  --box:#FF8A50; --box-soft:#3A2116;
+  --up:#4CC98A; --up-soft:#173527; --down:#FF7A6B; --down-soft:#3D1D1A; --gold:#F0BE48; --gold-soft:#3A2E12; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1420; --panel:#122033; --ink:#E8EEF5; --muted:#9AAABD; --line:#24364D;
+  --navy:#8DB8FF; --teal:#35C8DB; --teal-ink:#5FD6E6; --sea:#123247;
+  --box:#FF8A50; --box-soft:#3A2116;
+  --up:#4CC98A; --up-soft:#173527; --down:#FF7A6B; --down-soft:#3D1D1A; --gold:#F0BE48; --gold-soft:#3A2E12; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;padding-inline:16px;padding-block:20px 48px}
+.wrap{max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.wrap>*{min-width:0}
+.wrap .wrap{margin:0;max-width:none;width:100%}
+h1,h2,h3{font-family:var(--display);line-height:1.05;margin:0;text-wrap:balance;color:var(--navy);text-transform:uppercase}
+h1{font-size:clamp(2.6rem,7vw,4.2rem);font-weight:700}
+h2{font-size:1.9rem;font-weight:700;letter-spacing:.02em}
+h3{font-size:1.25rem;font-weight:600;letter-spacing:.04em}
+p{margin:0}
+a{color:var(--teal-ink);font-weight:700}
+.eyebrow{font-family:var(--display);font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--box);font-size:.95rem}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px}
+.muted{color:var(--muted)}
+.lead{max-width:65ch;font-size:1.08rem}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:16px}
+.grid2>*{min-width:0}
+button{font:inherit;cursor:pointer}
+.btn{font-family:var(--display);font-weight:700;font-size:1.15rem;text-transform:uppercase;letter-spacing:.06em;border:0;border-radius:8px;padding:12px 22px;background:var(--navy);color:var(--panel)}
+.btn.box{background:var(--box);color:#fff}
+.btn.alt{background:transparent;color:var(--navy);border:2px solid var(--navy)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+input[type=text],input[type=date],select{font:inherit;padding:10px 12px;border:2px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);width:100%}
+label.field{display:flex;flex-direction:column;gap:6px;font-weight:700}
+label.field small{font-weight:400;color:var(--muted)}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:16px}
+table{border-collapse:collapse;width:100%}
+td,th{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-family:var(--display);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;font-size:.9rem;white-space:nowrap}
+.tablewrap{overflow-x:auto}
+.ok{color:var(--up);font-weight:700} .no{color:var(--down);font-weight:700}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));gap:12px;counter-reset:s;margin:0;padding:0;list-style:none}
+.steps li{background:var(--panel);border:1px solid var(--line);border-top:4px solid var(--box);border-radius:0 0 8px 8px;padding:14px;counter-increment:s}
+.steps li::before{content:counter(s);display:block;font-family:var(--display);font-size:1.8rem;font-weight:700;color:var(--navy);line-height:1}
+.hint{background:var(--sea);border-radius:10px;padding:14px 16px}
+.topbar{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:flex-end}
+.progress{height:8px;background:var(--line);border-radius:999px;overflow:hidden}
+.progress>i{display:block;height:100%;background:var(--box);width:0;transition:width .3s}
+.clock{font-family:var(--display);font-size:2.2rem;font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums;line-height:1}
+.term{display:inline-block;font-family:var(--display);font-weight:700;font-size:3rem;line-height:1;color:#fff;background:var(--navy);padding:6px 16px;border-radius:8px;letter-spacing:.04em}
+:root[data-theme="dark"] .term{color:#0B1420}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .term{color:#0B1420}}
+.termname{font-size:1.1rem;font-weight:700}
+/* route strip */
+.route{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;position:relative;padding-top:6px}
+.route::before{content:"";position:absolute;left:4%;right:4%;top:44px;height:6px;border-radius:3px;background:linear-gradient(90deg,var(--line) 0 58%,var(--teal) 58% 75%,var(--line) 75%)}
+.stop{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;border:2px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:10px 6px 12px;min-height:150px}
+.stop .dot{width:30px;height:30px;border-radius:50%;background:var(--panel);border:4px solid var(--navy);display:grid;place-items:center;font-family:var(--display);font-weight:700;color:var(--navy)}
+.stop .txt{display:flex;flex-direction:column;gap:4px}
+.stop b{font-size:.95rem;line-height:1.2}
+.stop:disabled{color:var(--ink);cursor:default}
+.opt:disabled{color:var(--ink);cursor:default}
+.stop span{font-size:.8rem;color:var(--muted);line-height:1.25}
+.stop:hover:not(:disabled){border-color:var(--box)}
+.stop.right{background:var(--up-soft);border-color:var(--up)}
+.stop.wrong{background:var(--down-soft);border-color:var(--down)}
+.sea{grid-column:4/5}
+@media (max-width:700px){
+  .route{grid-template-columns:1fr}
+  .route::before{left:30px;right:auto;top:10px;bottom:10px;width:6px;height:auto;background:var(--line)}
+  .stop{flex-direction:row;min-height:0;text-align:left;padding:10px 12px}
+}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:10px}
+.opt{border:2px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:14px 10px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.opt b{font-family:var(--display);font-size:1.9rem;line-height:1;color:var(--navy)}
+.opt span{font-size:.82rem;color:var(--muted);text-align:center}
+.opt:hover:not(:disabled){border-color:var(--box)}
+.opt.right{background:var(--up-soft);border-color:var(--up)} .opt.wrong{background:var(--down-soft);border-color:var(--down)}
+.scen{font-size:1.12rem;max-width:70ch}
+.feedback{border-radius:10px;padding:14px 16px}
+.feedback.good{background:var(--up-soft)} .feedback.bad{background:var(--down-soft)}
+.big{font-family:var(--display);font-size:clamp(3rem,10vw,5rem);font-weight:700;line-height:1;font-variant-numeric:tabular-nums;color:var(--navy)}
+.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.3rem;font-weight:700;letter-spacing:.06em;padding:10px 14px;border:2px dashed var(--navy);border-radius:8px;background:var(--panel);user-select:all;overflow-wrap:anywhere}
+.log{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:10px}
+.stat{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--bg)}
+.stat .k{font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.stat .v{font-family:var(--display);font-size:1.35rem;font-weight:700;line-height:1.15;overflow-wrap:break-word}
+.shipnote{border-left:4px solid var(--teal);padding:8px 12px;background:var(--sea);border-radius:0 8px 8px 0}
+.shot{font-family:var(--display);text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--teal-ink)}
+textarea{font:inherit;font-family:ui-monospace,Menlo,Consolas,monospace;width:100%;min-height:180px;padding:10px;border:2px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}
+.err{color:var(--down);font-weight:700}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<section id="intro" class="wrap" style="gap:18px">
+  <div class="eyebrow">BA 155 · Sim 7 · Chapters 12 and 14</div>
+  <h1>Follow the ship</h1>
+  <p class="lead">Right now, giant container ships are lining up off the coast near Cerritos, waiting to unload at the Ports of Los Angeles and Long Beach. In this sim you will track one real ship across the ocean, then face the <b>Incoterms showdown</b>. Every right answer counts, and the clock breaks ties. The top score in the class wins!</p>
+  <ol class="steps">
+    <li><b>Track a real ship.</b> Find a container ship headed to LA or Long Beach on a free ship tracker and log its trip.</li>
+    <li><b>Incoterms showdown.</b> 16 questions. Show where risk passes from seller to buyer, then pick the right term for real deals.</li>
+    <li><b>Get your code.</b> Copy your ship log and result code into the Sim 7 template.</li>
+  </ol>
+  <div class="hint"><b>Before you start.</b> Review the Incoterms table in the Week 7 study notes. You get <b>one try</b> at the showdown, and the clock keeps running even if you close the page.</div>
+  <div class="panel" style="display:grid;gap:14px">
+    <label class="field" for="studentName">Your full name, as it appears in Canvas
+      <input type="text" id="studentName" autocomplete="name" placeholder="First and last name" style="max-width:360px">
+    </label>
+    <div class="row"><button class="btn box" id="startBtn">Start Part 1</button><span class="err" id="nameNote"></span></div>
+  </div>
+</section>
+
+<section id="track" class="wrap" style="gap:16px" hidden>
+  <div><div class="eyebrow">Part 1 of 2</div><h2>Track a real ship</h2></div>
+  <div class="panel" style="display:grid;gap:10px">
+    <h3>How to find your ship</h3>
+    <ol style="margin:0;padding-left:1.2em;display:grid;gap:6px">
+      <li>Open <a href="https://www.vesselfinder.com" target="_blank" rel="noopener">VesselFinder</a> and zoom in on Los Angeles and Long Beach. The ships waiting offshore are a great place to look.</li>
+      <li>Click a ship icon. Pick one whose type says <b>Container Ship</b> and whose destination is Los Angeles or Long Beach. A ship that just arrived also works.</li>
+      <li>Click the ship's name to open its details page. Look for the <b>flag</b>, the <b>last port</b> with its departure date (ATD), and the <b>ETA</b>.</li>
+    </ol>
+    <p class="muted" style="font-size:.92rem">Can't find one? Try <a href="https://www.marinetraffic.com" target="_blank" rel="noopener">MarineTraffic</a> or <a href="https://www.myshiptracking.com" target="_blank" rel="noopener">MyShipTracking</a> instead. Every student should pick their own ship.</p>
+  </div>
+  <div class="panel" style="display:grid;gap:16px">
+    <div class="form">
+      <label class="field" for="fShip">Ship name<input type="text" id="fShip" placeholder="For example, EVER ACE"></label>
+      <label class="field" for="fFlag">Flag
+        <select id="fFlag"></select></label>
+      <label class="field" for="fFrom">Last port <small>Where the ship left from</small>
+        <select id="fFrom"></select></label>
+      <label class="field" for="fOther" id="otherWrap" hidden>Name of the port<input type="text" id="fOther" placeholder="Port and country"></label>
+      <label class="field" for="fTo">Headed to
+        <select id="fTo"><option value="">Choose one</option><option>Los Angeles</option><option>Long Beach</option></select></label>
+      <label class="field" for="fDep">Left the last port on <small>ATD date</small><input type="date" id="fDep"></label>
+      <label class="field" for="fArr">Arrives on <small>ETA, or arrival date if it is already here</small><input type="date" id="fArr"></label>
+      <label class="field" for="fCargo">What do you think it carries?
+        <select id="fCargo"></select></label>
+    </div>
+    <div class="row"><button class="btn" id="logBtn">Log my ship</button><span class="err" id="logNote"></span></div>
+    <div id="logOut" hidden style="display:grid;gap:12px"></div>
+  </div>
+</section>
+
+<section id="ready" class="wrap" style="gap:16px" hidden>
+  <div><div class="eyebrow">Part 2 of 2</div><h2>The Incoterms showdown</h2></div>
+  <div class="panel" style="display:grid;gap:12px">
+    <p class="lead"><b>Round 1, eight questions.</b> You see an Incoterm. Tap the point on the trip where <b>risk passes from the seller to the buyer</b>.</p>
+    <p class="lead"><b>Round 2, eight questions.</b> Read a real deal and pick the Incoterm that fits.</p>
+    <div class="hint">Each question has one answer and one try. Your score is the number right out of 16. If two players tie, the faster time wins. The clock starts when you press the button and keeps running if you leave.</div>
+    <div class="row"><button class="btn box" id="goBtn">Start the clock</button></div>
+  </div>
+</section>
+
+<section id="quiz" class="wrap" style="gap:16px" hidden>
+  <div class="topbar">
+    <div><div class="eyebrow" id="roundLbl">Round 1 · Where does risk pass?</div><h2 id="qLbl">Question 1 <span class="muted" style="font-size:1.2rem">of 16</span></h2></div>
+    <div style="text-align:right"><div class="muted" style="font-size:.85rem;text-transform:uppercase;letter-spacing:.05em">Score · Time</div><div class="clock"><span id="scoreNow">0</span> · <span id="clock">0:00</span></div></div>
+  </div>
+  <div class="progress" aria-hidden="true"><i id="prog"></i></div>
+  <div class="panel" style="display:grid;gap:16px" id="qPanel"></div>
+</section>
+
+<section id="res" class="wrap" style="gap:16px" hidden>
+  <div><div class="eyebrow">Results</div><h2 id="who"></h2><p class="muted" id="lockedNote"></p></div>
+  <div class="grid2">
+    <div class="panel" style="display:grid;gap:6px">
+      <span class="muted" style="text-transform:uppercase;letter-spacing:.05em;font-size:.85rem">Your score</span>
+      <div class="big" id="total"></div>
+      <p id="verdict"></p>
+    </div>
+    <div class="panel" style="display:grid;gap:10px">
+      <span class="muted" style="text-transform:uppercase;letter-spacing:.05em;font-size:.85rem">Your result code</span>
+      <div class="code" id="code"></div>
+      <p class="muted" style="font-size:.92rem">Copy this code and your ship log into the Sim 7 template. Highest score wins, and time breaks ties.</p>
+      <div class="row"><button class="btn alt" id="copyBtn">Copy code</button><span class="muted" id="copied"></span></div>
+    </div>
+  </div>
+  <div class="panel" style="display:grid;gap:12px"><h3>Your ship log</h3><div id="logRes"></div></div>
+  <div class="panel"><h3 style="margin-bottom:8px">Your answers</h3><div class="tablewrap"><table id="ans"></table></div></div>
+  <div class="panel"><h3 style="margin-bottom:8px">Incoterms cheat sheet</h3><p class="muted" style="margin-bottom:8px">Keep this for Quiz 4 and Discussion 4.</p><div class="tablewrap"><table id="cheat"></table></div></div>
+  <p class="shot">Copy your ship log and result code into the Sim 7 template. No screenshot needed.</p>
+</section>
+
+<section id="verify" class="wrap" style="gap:16px" hidden>
+  <div><div class="eyebrow">Instructor tools</div><h2>Check codes and rank players</h2>
+  <p class="muted">Paste one student per line as <b>Name, code</b>. Names must match what students typed.</p></div>
+  <label class="field" for="vin">Names and codes<textarea id="vin" spellcheck="false"></textarea></label>
+  <div class="row"><button class="btn box" id="vbtn">Check and rank</button></div>
+  <div class="panel"><div class="tablewrap"><table id="vout"><tr><td class="muted">Your ranked list will show here.</td></tr></table></div></div>
+</section>
+
+</div>
+
+<script>
+(function(){
+  const LOCK='ba155-followship-v1', SALT='SHIP26';
+  const $=id=>document.getElementById(id);
+  const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const show=id=>{['intro','track','ready','quiz','res','verify'].forEach(s=>$(s).hidden=s!==id);window.scrollTo(0,0);};
+
+  /* ---------- Part 1 data ---------- */
+  const PORTS=[ // name, lat, lon, routing factor, region
+    ['Shanghai, China',31.0,122.0,1.02,'asia'],['Ningbo, China',29.93,121.85,1.02,'asia'],['Qingdao, China',36.07,120.3,1.02,'asia'],
+    ['Xiamen, China',24.45,118.07,1.02,'asia'],['Yantian or Shenzhen, China',22.57,114.27,1.02,'asia'],['Hong Kong',22.3,114.17,1.02,'asia'],
+    ['Kaohsiung, Taiwan',22.6,120.28,1.02,'asia'],['Busan, South Korea',35.1,129.04,1.02,'asia'],['Tokyo or Yokohama, Japan',35.45,139.65,1.02,'asia'],
+    ['Ho Chi Minh City or Cai Mep, Vietnam',10.53,107.03,1.02,'asia'],['Haiphong, Vietnam',20.85,106.75,1.02,'asia'],['Singapore',1.26,103.82,1.02,'asia'],
+    ['Laem Chabang, Thailand',13.08,100.88,1.02,'asia'],['Port Klang, Malaysia',3.0,101.37,1.02,'asia'],['Manila, Philippines',14.6,120.95,1.02,'asia'],
+    ['Sydney, Australia',-33.97,151.22,1.02,'oce'],['Auckland, New Zealand',-36.84,174.77,1.02,'oce'],['Honolulu, Hawaii',21.31,-157.87,1.02,'oce'],
+    ['Oakland, California',37.8,-122.32,1.08,'am'],['Seattle or Tacoma, Washington',47.4,-122.4,1.08,'am'],['Vancouver, Canada',49.29,-123.1,1.08,'am'],
+    ['Ensenada, Mexico',31.85,-116.63,1.08,'am'],['Manzanillo, Mexico',19.05,-104.32,1.08,'am'],['Lázaro Cárdenas, Mexico',17.93,-102.18,1.08,'am'],
+    ['Balboa, Panama',8.95,-79.57,1.12,'am'],['Callao, Peru',-12.05,-77.15,1.08,'am'],['San Antonio, Chile',-33.58,-71.62,1.06,'am']
+  ];
+  const DEST={'Los Angeles':[33.73,-118.27],'Long Beach':[33.75,-118.21]};
+  const FLAGS=['Panama','Liberia','Marshall Islands','Malta','Bahamas','Singapore','Hong Kong','Portugal','Cyprus','Greece','Denmark','Germany','United Kingdom','United States','China','Japan','South Korea','Taiwan','Other'];
+  const OPEN=['Panama','Liberia','Marshall Islands','Malta','Bahamas','Portugal','Cyprus'];
+  const CARGO=['Electronics and appliances','Furniture and home goods','Clothing and shoes','Toys and games','Auto parts','Food and drinks','Machinery','Empty containers'];
+  const fill=(el,arr,first)=>{el.innerHTML='<option value="">'+first+'</option>'+arr.map(v=>'<option>'+esc(v)+'</option>').join('');};
+  fill($('fFlag'),FLAGS,'Choose a flag'); fill($('fCargo'),CARGO,'Choose your best guess');
+  $('fFrom').innerHTML='<option value="">Choose a port</option>'+PORTS.map((p,i)=>'<option value="'+i+'">'+esc(p[0])+'</option>').join('')+'<option value="other">Another port</option>';
+  $('fFrom').addEventListener('change',()=>{$('otherWrap').hidden=$('fFrom').value!=='other';});
+
+  function gc(a,b,c,d){const r=Math.PI/180;a*=r;b*=r;c*=r;d*=r;return 3440.065*2*Math.asin(Math.sqrt(Math.sin((c-a)/2)**2+Math.cos(a)*Math.cos(c)*Math.sin((d-b)/2)**2));}
+
+  function buildLog(){
+    const ship=$('fShip').value.trim(), flag=$('fFlag').value, fi=$('fFrom').value, to=$('fTo').value, dep=$('fDep').value, arr=$('fArr').value, cargo=$('fCargo').value;
+    if(!ship||!flag||!fi||!to||!dep||!arr||!cargo) return {err:'Please fill in every box.'};
+    if(fi==='other'&&!$('fOther').value.trim()) return {err:'Please type the name of the port.'};
+    const days=Math.round((new Date(arr)-new Date(dep))/864e5);
+    if(!(days>0)) return {err:'The arrival date has to be after the departure date.'};
+    if(days>80) return {err:'That trip is over 80 days. Please check your dates.'};
+    const L={ship,flag,to,dep,arr,cargo,days};
+    if(fi==='other'){L.from=$('fOther').value.trim();L.nm=null;L.kn=null;}
+    else{const p=PORTS[+fi],d=DEST[to];L.from=p[0];L.nm=Math.round(gc(p[1],p[2],d[0],d[1])*p[3]/10)*10;L.kn=Math.round(L.nm/(days*24)*10)/10;}
+    return L;
+  }
+  function logHTML(L){
+    let h='<div class="log">'+
+      st('Ship',L.ship)+st('Flag',L.flag)+st('From',L.from)+st('To',L.to)+st('Days at sea',L.days)+
+      st('Distance',L.nm?'≈ '+L.nm.toLocaleString('en-US')+' nm':'Look it up')+st('Average speed',L.kn?L.kn+' knots':'Not found')+st('Cargo guess',L.cargo)+'</div>';
+    const notes=[];
+    if(L.kn){
+      if(L.kn<8) notes.push('An average of '+L.kn+' knots is very slow. The ship may have stopped at another port on the way, or it may wait at anchor before it gets a berth. Check its port calls.');
+      else if(L.kn>24) notes.push('An average of '+L.kn+' knots is faster than most container ships can go. Double check the dates, or the ship may have left from a closer port.');
+      else notes.push('Most container ships cruise at about 14 to 20 knots, and many slow down to save fuel, called <b>slow steaming</b>. Your ship averaged '+L.kn+' knots. One knot is one nautical mile per hour, about 1.15 miles per hour.');
+    } else notes.push('Your port is not on our list, so we could not work out the distance. Use a site like Searoutes or ask in the Ask the class forum, and add the distance to your template.');
+    if(OPEN.includes(L.flag)) notes.push('Your ship flies the flag of <b>'+esc(L.flag)+'</b>, a popular <b>open registry</b>, often called a flag of convenience. Owners register there for lower taxes, fees, and costs. Check the owner. Is it from a different country?');
+    else if(L.flag!=='Other') notes.push('Your ship flies the flag of <b>'+esc(L.flag)+'</b>. Is that where the owner is based? Many ships register in a country other than the owner’s home.');
+    if(L.cargo==='Empty containers') notes.push('Good thinking. More boxes arrive in Southern California full than leave full, so many containers go back to Asia empty.');
+    return h+notes.map(n=>'<p class="shipnote">'+n+'</p>').join('');
+  }
+  const st=(k,v)=>'<div class="stat"><div class="k">'+k+'</div><div class="v">'+esc(v)+'</div></div>';
+
+  /* ---------- Part 2 data ---------- */
+  const STOPS=[
+    ['Seller’s door','Goods ready, not loaded'],
+    ['First carrier','Handed to the truck, train, or airline at origin'],
+    ['Alongside the ship','On the dock at the origin port'],
+    ['On board the ship','Loaded at the origin port'],
+    ['Arrived','At the named place, ready to unload'],
+    ['Unloaded','Off the truck at the named place']
+  ];
+  const TERMS={
+    EXW:{n:'Ex Works',risk:0,pay:'Buyer pays almost everything, even loading and export clearance.',mode:'Any mode'},
+    FCA:{n:'Free Carrier',risk:1,pay:'Seller clears export and hands goods to the buyer’s carrier. Buyer pays the main trip.',mode:'Any mode'},
+    CPT:{n:'Carriage Paid To',risk:1,pay:'Seller pays the main trip to the destination, but risk passes at the first carrier.',mode:'Any mode'},
+    CIP:{n:'Carriage and Insurance Paid To',risk:1,pay:'Like CPT, plus the seller buys broad insurance for the buyer.',mode:'Any mode'},
+    DAP:{n:'Delivered at Place',risk:4,pay:'Seller pays the trip to the named place. Buyer unloads and pays import duties.',mode:'Any mode'},
+    DPU:{n:'Delivered at Place Unloaded',risk:5,pay:'Seller pays the trip and unloads. Buyer pays import duties.',mode:'Any mode'},
+    DDP:{n:'Delivered Duty Paid',risk:4,pay:'Seller pays everything, including import duties. Buyer unloads.',mode:'Any mode'},
+    FAS:{n:'Free Alongside Ship',risk:2,pay:'Seller gets goods to the dock next to the ship. Buyer pays the ocean trip.',mode:'Sea only'},
+    FOB:{n:'Free on Board',risk:3,pay:'Seller loads goods on the ship. Buyer pays the ocean trip.',mode:'Sea only'},
+    CFR:{n:'Cost and Freight',risk:3,pay:'Seller pays ocean freight to the destination port, but risk passes once goods are on board.',mode:'Sea only'},
+    CIF:{n:'Cost, Insurance and Freight',risk:3,pay:'Like CFR, plus the seller buys basic insurance for the buyer.',mode:'Sea only'}
+  };
+  const R1=[
+    ['FOB','Free on Board is the classic ocean term. Risk passes once the goods are loaded on the ship at the origin port.'],
+    ['EXW','Ex Works puts the least on the seller. Risk passes the moment the goods are ready at the seller’s door, before anyone loads them.'],
+    ['CIF','Tricky one! Under CIF the seller pays freight and insurance all the way to the destination port, but risk passes once the goods are on board at the origin port. Cost and risk split at different places.'],
+    ['DAP','Under DAP, risk passes when the goods arrive at the named place, still on the truck and ready to unload.'],
+    ['FCA','Under FCA, risk passes when the seller hands the goods to the carrier the buyer chose. It works for any mode, including containers.'],
+    ['DDP','DDP puts the most on the seller, including import duties. Risk passes on arrival at the named place, ready to unload, just like DAP.'],
+    ['CPT','Another split term. The seller pays carriage to the destination, but risk passes when the goods go to the first carrier.'],
+    ['DPU','DPU is the only term where the seller must unload. Risk passes once the goods are off the truck at the named place.']
+  ];
+  const R2=[
+    {t:'Tapioca from Taiwan, loaded by the factory',s:'Pearl Tea Café buys two containers of tapioca pearls from a factory in Taiwan. The factory loads the containers onto the truck sent by the café’s freight forwarder and clears them for export. From there, the café pays and takes the risk.',a:'FCA',o:['EXW','FCA','FOB','DAP'],f:'FCA. The seller loads at its own site and clears export, then the buyer’s carrier takes over. Under EXW the seller would not load or clear export.'},
+    {t:'Bulk soybeans from New Orleans',s:'A farm co-op in Louisiana sells bulk soybeans to a buyer in Japan. The buyer charters the ship. The co-op’s job ends once the beans are loaded on board in New Orleans.',a:'FOB',o:['FAS','FOB','CFR','DDP'],f:'FOB. It is a sea only term and a classic fit for bulk cargo loaded straight onto a ship.'},
+    {t:'Furniture from Vietnam, seller insures',s:'A furniture maker in Vietnam books and pays the ocean freight to Long Beach and buys insurance for the trip. If the ship hits a storm, the U.S. buyer files the insurance claim, because the risk already passed in Vietnam.',a:'CIF',o:['CFR','CIF','CIP','DAP'],f:'CIF. The seller pays freight and insurance, but risk passes on board at the origin port. CFR would have no insurance. For containers, the ICC suggests CIP, which works for any mode.'},
+    {t:'Skincare to an Irvine shop, zero hassle',s:'A small online shop in Irvine wants zero hassle. Its Korean skincare supplier ships to the shop’s door and pays the freight, U.S. customs clearance, and import duties.',a:'DDP',o:['DAP','DPU','DDP','CPT'],f:'DDP. The seller carries every cost and task, including import duties. Under DAP the buyer would pay the duties.'},
+    {t:'Auto parts trucked from Mexico',s:'A supplier in Monterrey, Mexico trucks auto parts to a plant in Texas. The supplier pays for the trip, and the truck arrives ready to unload. The U.S. plant unloads, clears customs, and pays any duties.',a:'DAP',o:['DAP','DPU','DDP','FCA'],f:'DAP. The seller delivers to the named place ready to unload. The buyer unloads and handles import clearance.'},
+    {t:'Buyer’s truck at a Shenzhen factory',s:'A buyer sends its own truck to a factory in Shenzhen. The factory simply opens the door. The buyer loads the goods and handles all the export paperwork.',a:'EXW',o:['EXW','FCA','FAS','FOB'],f:'EXW. The seller does the least possible. Watch out, a foreign buyer often cannot file export papers in China, which is why the ICC says FCA is often a better choice.'},
+    {t:'Wine by air to Tokyo',s:'A winery in Paso Robles sends wine by air to a shop in Tokyo. The winery pays the airfreight to Tokyo but buys no insurance. Once the cases go to the air carrier at LAX, any damage is the buyer’s problem.',a:'CPT',o:['CPT','CIP','CFR','DAP'],f:'CPT. The seller pays carriage, risk passes at the first carrier, and no insurance is included. CFR is for sea only, so it cannot be used for air.'},
+    {t:'Machine unloaded at a German factory',s:'A U.S. company sells a large machine to a factory in Germany. The U.S. seller pays to ship it to the factory and unloads it with a crane. The German buyer pays the import duties.',a:'DPU',o:['DAP','DPU','DDP','CIP'],f:'DPU. It is the only Incoterm where the seller must unload at the destination.'}
+  ];
+  const N=R1.length+R2.length;
+
+  /* ---------- code ---------- */
+  function checksum(s){let h=7;for(let i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))%1679616;}return h.toString(36).toUpperCase().padStart(4,'0');}
+  const norm=s=>s.toUpperCase().replace(/\s+/g,' ').trim();
+  const makeCode=(nm,sc,t)=>'INC-'+sc+'-'+t+'-'+checksum(norm(nm)+'|'+sc+'|'+t+'|'+SALT);
+  function readLock(){try{const v=localStorage.getItem(LOCK);return v?JSON.parse(v):null;}catch(e){return null;}}
+  function writeLock(o){try{localStorage.setItem(LOCK,JSON.stringify(o));}catch(e){}}
+  const fmt=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+
+  let S=null, timer=null;
+  const save=()=>writeLock(S);
+  const score=()=>S.ans.filter(a=>a.ok).length;
+  const elapsed=()=>S.end?S.end:Math.round((Date.now()-S.t0)/1000);
+
+  /* ---------- flow ---------- */
+  $('startBtn').addEventListener('click',()=>{
+    const nm=$('studentName').value.trim();
+    if(nm.split(/\s+/).length<2){$('nameNote').textContent='Please enter your first and last name.';$('studentName').focus();return;}
+    S={name:nm,log:null,t0:null,ans:[],end:null}; save(); show('track');
+  });
+  $('logBtn').addEventListener('click',()=>{
+    const L=buildLog(); if(L.err){$('logNote').textContent=L.err;return;}
+    $('logNote').textContent=''; S.log=L; save();
+    $('logOut').hidden=false;
+    $('logOut').innerHTML=logHTML(L)+'<div class="row"><button class="btn box" id="toQuiz">On to the showdown</button><span class="muted">You can fix your log before you move on.</span></div>';
+    $('toQuiz').addEventListener('click',()=>show('ready'));
+  });
+  $('goBtn').addEventListener('click',()=>{ if(!S.t0){S.t0=Date.now();save();} startQuiz(); });
+
+  function startQuiz(){
+    show('quiz'); clearInterval(timer);
+    timer=setInterval(()=>{$('clock').textContent=fmt(elapsed());},500);
+    renderQ();
+  }
+  function renderQ(){
+    const i=S.ans.length;
+    if(i>=N){finish();return;}
+    $('qLbl').innerHTML='Question '+(i+1)+' <span class="muted" style="font-size:1.2rem">of '+N+'</span>';
+    $('prog').style.width=(i/N*100)+'%';
+    $('scoreNow').textContent=score(); $('clock').textContent=fmt(elapsed());
+    const P=$('qPanel');
+    if(i<R1.length){
+      $('roundLbl').textContent='Round 1 · Where does risk pass?';
+      const [code]=R1[i], T=TERMS[code];
+      P.innerHTML='<div class="row" style="align-items:center;gap:16px"><span class="term">'+code+'</span><div><div class="termname">'+T.n+'</div><div class="muted">Tap the point where risk passes from seller to buyer.</div></div></div>'+
+        '<div class="route" role="group" aria-label="Trip from seller to buyer">'+STOPS.map((s,k)=>'<button class="stop" data-k="'+k+'"><span class="dot">'+(k+1)+'</span><span class="txt"><b>'+s[0]+'</b><span>'+s[1]+'</span></span></button>').join('')+'</div>'+
+        '<p class="muted" style="font-size:.9rem">The trip runs from the seller at stop 1 to the buyer at stop 6. The ocean crossing is between stops 4 and 5.</p><div id="fb"></div>';
+      P.querySelectorAll('.stop').forEach(b=>b.addEventListener('click',()=>answer(+b.dataset.k)));
+    } else {
+      $('roundLbl').textContent='Round 2 · Pick the Incoterm';
+      const q=R2[i-R1.length];
+      P.innerHTML='<p class="scen">'+q.s+'</p><div class="opts">'+q.o.map(c=>'<button class="opt" data-c="'+c+'"><b>'+c+'</b><span>'+TERMS[c].n+'</span></button>').join('')+'</div><div id="fb"></div>';
+      P.querySelectorAll('.opt').forEach(b=>b.addEventListener('click',()=>answer(b.dataset.c)));
+    }
+  }
+  function answer(v){
+    const i=S.ans.length; if(i>=N) return;
+    let ok,right,expl;
+    if(i<R1.length){const [code,e]=R1[i]; right=TERMS[code].risk; ok=v===right; expl=e;}
+    else{const q=R2[i-R1.length]; right=q.a; ok=v===right; expl=q.f;}
+    S.ans.push({v,ok}); if(S.ans.length===N) S.end=Math.round((Date.now()-S.t0)/1000); save();
+    const P=$('qPanel');
+    P.querySelectorAll('button.stop,button.opt').forEach(b=>{
+      b.disabled=true; const val=b.dataset.k!==undefined?+b.dataset.k:b.dataset.c;
+      if(val===right) b.classList.add('right'); else if(val===v) b.classList.add('wrong');
+    });
+    $('scoreNow').textContent=score();
+    const last=S.ans.length>=N;
+    $('fb').innerHTML='<div class="feedback '+(ok?'good':'bad')+'" style="display:grid;gap:10px"><p><b>'+(ok?'Correct!':'Not quite.')+'</b> '+expl+'</p><div><button class="btn" id="nextBtn">'+(last?'See my results':'Next question')+'</button></div></div>';
+    $('nextBtn').focus();
+    $('nextBtn').addEventListener('click',renderQ);
+  }
+
+  function finish(note){
+    clearInterval(timer);
+    const sc=score(), t=S.end||elapsed();
+    $('who').textContent=S.name+'’s ship log and score';
+    $('lockedNote').textContent=note||'';
+    $('total').innerHTML=sc+'<span class="muted" style="font-size:.45em"> / '+N+'</span>';
+    $('verdict').innerHTML='Time <b>'+fmt(t)+'</b>. '+(sc===N?'A perfect score. You are ready to ship worldwide!':sc>=13?'Excellent work. You know your Incoterms.':sc>=9?'Solid start. Review the cheat sheet before Quiz 4.':'Incoterms are tricky. Study the cheat sheet below before Quiz 4.');
+    $('code').textContent=makeCode(S.name,sc,t);
+    $('logRes').innerHTML=S.log?logHTML(S.log):'<p class="muted">No ship logged.</p>';
+    const rows=[];
+    R1.forEach(([code],k)=>{const a=S.ans[k];rows.push('<tr><td>'+(k+1)+'</td><td>Where does risk pass under <b>'+code+'</b>?</td><td>'+(a?STOPS[a.v][0]:'')+'</td><td>'+STOPS[TERMS[code].risk][0]+'</td><td class="'+(a&&a.ok?'ok':'no')+'">'+(a&&a.ok?'Right':'Missed')+'</td></tr>');});
+    R2.forEach((q,j)=>{const k=R1.length+j,a=S.ans[k];rows.push('<tr><td>'+(k+1)+'</td><td>'+q.t+'</td><td>'+(a?a.v:'')+'</td><td>'+q.a+'</td><td class="'+(a&&a.ok?'ok':'no')+'">'+(a&&a.ok?'Right':'Missed')+'</td></tr>');});
+    $('ans').innerHTML='<tr><th>#</th><th>Question</th><th>You said</th><th>Answer</th><th></th></tr>'+rows.join('');
+    $('cheat').innerHTML='<tr><th>Term</th><th>Name</th><th>Mode</th><th>Risk passes</th><th>Who pays</th></tr>'+
+      Object.entries(TERMS).map(([c,T])=>'<tr><td><b>'+c+'</b></td><td>'+T.n+'</td><td style="white-space:nowrap">'+T.mode+'</td><td>'+STOPS[T.risk][0]+'</td><td>'+T.pay+'</td></tr>').join('');
+    show('res');
+  }
+
+  $('copyBtn').addEventListener('click',()=>{
+    const t=$('code').textContent;
+    const sel=()=>{const r=document.createRange();r.selectNodeContents($('code'));const s=getSelection();s.removeAllRanges();s.addRange(r);$('copied').textContent='Press Ctrl+C or Command+C to copy.';};
+    try{navigator.clipboard.writeText(t).then(()=>{$('copied').textContent='Copied.';},sel);}catch(e){sel();}
+  });
+
+  /* ---------- verify ---------- */
+  $('vbtn').addEventListener('click',()=>{
+    const rows=$('vin').value.split(/\n/).map(l=>l.trim()).filter(Boolean).map(l=>{
+      const i=l.lastIndexOf(','); if(i<0) return {name:l,ok:false};
+      const nm=l.slice(0,i).trim(), code=l.slice(i+1).trim().toUpperCase();
+      const m=code.match(/^INC-(\d+)-(\d+)-([0-9A-Z]{4})$/); if(!m) return {name:nm,ok:false};
+      return {name:nm,ok:checksum(norm(nm)+'|'+m[1]+'|'+m[2]+'|'+SALT)===m[3],sc:+m[1],t:+m[2]};
+    });
+    rows.sort((a,b)=>(b.ok-a.ok)||((b.sc??-1)-(a.sc??-1))||((a.t??1e9)-(b.t??1e9)));
+    let r=0;
+    $('vout').innerHTML='<tr><th>Rank</th><th>Name</th><th>Score</th><th>Time</th><th>Code check</th></tr>'+rows.map(x=>{if(x.ok)r++;return '<tr><td>'+(x.ok?r:'')+'</td><td>'+esc(x.name)+'</td><td>'+(x.sc!=null?x.sc+' / '+N:'')+'</td><td>'+(x.t!=null?fmt(x.t):'')+'</td><td class="'+(x.ok?'ok':'no')+'">'+(x.ok?'Valid':'Does not match')+'</td></tr>';}).join('');
+  });
+  if(location.hash==='#verify'){show('verify');return;}
+
+  /* ---------- resume ---------- */
+  const saved=readLock();
+  if(saved&&saved.name){
+    S=saved;
+    if(S.ans&&S.ans.length>=N){ finish('You already played on this device. This is your saved result.'); }
+    else if(S.t0){ startQuiz(); }
+    else if(S.log){ $('studentName').value=S.name; show('track');
+      const L=S.log; $('fShip').value=L.ship; $('fFlag').value=L.flag; $('fTo').value=L.to; $('fDep').value=L.dep; $('fArr').value=L.arr; $('fCargo').value=L.cargo;
+      const pi=PORTS.findIndex(p=>p[0]===L.from); if(pi>=0) $('fFrom').value=pi; else {$('fFrom').value='other';$('otherWrap').hidden=false;$('fOther').value=L.from;}
+      $('logBtn').click(); }
+    else { $('studentName').value=S.name; }
+  }
+})();
+</script>
+</body>
+</html>
