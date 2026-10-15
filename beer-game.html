@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Beer Game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Layout: a single column "dispatch board". Four stations sit in a row like docks along a supply line; the player's dock is lit in amber. */
+:root{
+  --bg:#F3F6F9; --panel:#FFFFFF; --ink:#0F1B2D; --muted:#5A6B80; --line:#D5DEE8;
+  --navy:#002E66; --teal:#00ACC1; --teal-ink:#007C8C; --amber:#E8A33D; --amber-soft:#FFF3DF;
+  --red:#C8382B; --red-soft:#FCE8E6; --green:#1E8E5A;
+  --c-cust:#0F1B2D; --c-r:#00A3B8; --c-w:#3B6FD6; --c-d:#D98A1C; --c-f:#B43C8A;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1420; --panel:#122033; --ink:#E8EEF5; --muted:#9AAABD; --line:#24364D;
+  --navy:#7FB2FF; --teal:#35C8DB; --teal-ink:#5FD6E6; --amber:#F2B457; --amber-soft:#3A2C14;
+  --red:#FF7A6B; --red-soft:#3D1D1A; --green:#4CC98A;
+  --c-cust:#E8EEF5; --c-r:#35C8DB; --c-w:#7FA6FF; --c-d:#F2B457; --c-f:#E07BC0; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1420; --panel:#122033; --ink:#E8EEF5; --muted:#9AAABD; --line:#24364D;
+  --navy:#7FB2FF; --teal:#35C8DB; --teal-ink:#5FD6E6; --amber:#F2B457; --amber-soft:#3A2C14;
+  --red:#FF7A6B; --red-soft:#3D1D1A; --green:#4CC98A;
+  --c-cust:#E8EEF5; --c-r:#35C8DB; --c-w:#7FA6FF; --c-d:#F2B457; --c-f:#E07BC0; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;padding-inline:16px;padding-block:20px 48px}
+.wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--display);line-height:1.05;margin:0;text-wrap:balance;color:var(--navy)}
+h1{font-size:clamp(2.6rem,7vw,4rem);font-weight:700;letter-spacing:.01em;text-transform:uppercase}
+h2{font-size:1.9rem;font-weight:700;text-transform:uppercase;letter-spacing:.02em}
+h3{font-size:1.25rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+p{margin:0}
+.eyebrow{font-family:var(--display);font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--teal-ink);font-size:.95rem}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px}
+.muted{color:var(--muted)}
+.num{font-family:var(--display);font-variant-numeric:tabular-nums}
+button{font:inherit;cursor:pointer}
+.btn{font-family:var(--display);font-weight:700;font-size:1.15rem;text-transform:uppercase;letter-spacing:.06em;border:0;border-radius:8px;padding:12px 22px;background:var(--navy);color:var(--panel)}
+.btn:hover{filter:brightness(1.1)}
+.btn.alt{background:transparent;color:var(--navy);border:2px solid var(--navy)}
+.btn.amber{background:var(--amber);color:#1B1206}
+.btn:focus-visible,.role:focus-visible,input:focus-visible,.step:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+
+/* Hero */
+.hero{display:grid;gap:14px}
+.hero p{max-width:65ch;font-size:1.08rem}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.rule{border-top:4px solid var(--teal);background:var(--panel);border-radius:0 0 8px 8px;padding:14px;border-left:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.rule b{display:block;font-family:var(--display);font-size:1.6rem;color:var(--navy)}
+.rule span{color:var(--muted);font-size:.95rem}
+
+/* Role picker */
+.roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.role{text-align:left;background:var(--panel);border:2px solid var(--line);border-radius:10px;padding:14px;color:var(--ink);display:flex;flex-direction:column;gap:4px}
+.role[aria-pressed="true"]{border-color:var(--amber);background:var(--amber-soft)}
+.role .rname{font-family:var(--display);font-weight:700;font-size:1.4rem;text-transform:uppercase;color:var(--navy)}
+.role .rdesc{font-size:.9rem;color:var(--muted)}
+label.field{display:flex;flex-direction:column;gap:6px;font-weight:700;max-width:340px}
+input[type=text]{font:inherit;padding:10px 12px;border:2px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}
+
+/* Supply line */
+.chain{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;align-items:stretch}
+.dock{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.dock.me{border:2px solid var(--amber);background:var(--amber-soft)}
+.dock .dname{font-family:var(--display);font-weight:700;text-transform:uppercase;font-size:1.05rem;letter-spacing:.03em;color:var(--navy);overflow-wrap:anywhere}
+.dock .dval{font-family:var(--display);font-size:1.6rem;font-weight:600;font-variant-numeric:tabular-nums}
+.dock .dlab{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.dock .you{position:absolute;top:-10px;right:8px;background:var(--amber);color:#1B1206;font-family:var(--display);font-weight:700;font-size:.8rem;padding:1px 8px;border-radius:999px;letter-spacing:.06em}
+.flowhint{display:flex;justify-content:space-between;font-size:.8rem;color:var(--muted);gap:8px;flex-wrap:wrap}
+.flowhint b{color:var(--teal-ink)}
+
+/* Desk */
+.desk{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:20px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.stat{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--bg)}
+.stat .k{font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.stat .v{font-family:var(--display);font-size:2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat.bad{background:var(--red-soft);border-color:var(--red)}
+.stat.bad .v{color:var(--red)}
+.stat.hl{border-color:var(--teal)}
+.order{display:flex;flex-direction:column;gap:12px}
+.stepper{display:flex;align-items:center;gap:8px}
+.step{width:48px;height:48px;border-radius:8px;border:2px solid var(--line);background:var(--panel);color:var(--ink);font-size:1.5rem;font-weight:700}
+#orderQty{width:110px;text-align:center;font-family:var(--display);font-size:2rem;font-weight:700;padding:4px;border:2px solid var(--navy);border-radius:8px;background:var(--panel);color:var(--ink)}
+.signal{border-left:5px solid var(--teal);background:var(--bg);padding:10px 14px;border-radius:0 8px 8px 0}
+.signal b{font-family:var(--display);font-size:1.4rem}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:.92rem}
+th,td{padding:6px 8px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-family:var(--display);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+tr.mine td{background:var(--amber-soft);font-weight:700}
+.progress{height:8px;background:var(--line);border-radius:999px;overflow:hidden}
+.progress > i{display:block;height:100%;background:var(--teal);width:0;transition:width .3s}
+
+/* Results */
+.chartwrap{overflow-x:auto}
+svg text{font-family:var(--body)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.9rem}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:18px;height:4px;border-radius:2px;display:inline-block}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.callout{background:var(--amber-soft);border:1px solid var(--amber);border-radius:10px;padding:14px 16px}
+.shot{font-family:var(--display);text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--teal-ink)}
+
+@media (max-width:760px){
+  .desk{grid-template-columns:1fr}
+  .chain{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .dock.cust{grid-column:1 / -1}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<style>body{margin:0}</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- INTRO -->
+  <section id="intro" class="hero">
+    <div class="eyebrow">BA 155 · Sim 2 · Chapter 5</div>
+    <h1>The Beer Game</h1>
+    <p>Four companies pass cases of root beer down a supply line, from the factory to the distributor, to the wholesaler, to the retailer, and finally to customers. You run one of them. The computer runs the other three. Your goal is to keep your team's total cost as low as possible for 20 weeks.</p>
+    <p>The catch? Orders and shipments take time to travel, and no one can see what anyone else is doing.</p>
+
+    <div class="rules">
+      <div class="rule"><b>$0.50</b><span>per case in your inventory, every week</span></div>
+      <div class="rule"><b>$1.00</b><span>per case on backorder, every week. Customers waiting cost more!</span></div>
+      <div class="rule"><b>3 weeks</b><span>from placing an order until the cases arrive. One week for the order to travel, two weeks for shipping.</span></div>
+      <div class="rule"><b>20 weeks</b><span>in a round. Everyone starts with 12 cases and steady orders of 4.</span></div>
+    </div>
+
+    <div class="panel" style="display:grid;gap:16px">
+      <label class="field" for="studentName">Your name
+        <input type="text" id="studentName" autocomplete="name" placeholder="First and last name">
+      </label>
+      <div>
+        <h3 style="margin-bottom:10px">Pick your role</h3>
+        <div class="roles" id="roles"></div>
+      </div>
+      <div class="row">
+        <button class="btn amber" id="startBtn">Start round 1</button>
+        <span class="muted" id="startNote">Round 1 is the classic game. Round 2 adds shared sales data.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- GAME -->
+  <section id="game" hidden>
+    <div class="wrap" style="gap:16px">
+      <div class="row" style="justify-content:space-between">
+        <div>
+          <div class="eyebrow" id="roundLabel">Round 1 · Classic</div>
+          <h2><span id="weekLabel">Week 1</span> <span class="muted" style="font-size:1.2rem">of 20</span></h2>
+        </div>
+        <div style="text-align:right">
+          <div class="muted" style="font-size:.85rem;text-transform:uppercase;letter-spacing:.05em">Team cost so far</div>
+          <div class="num" style="font-size:2rem;font-weight:700" id="teamCost">$0.00</div>
+        </div>
+      </div>
+      <div class="progress" aria-hidden="true"><i id="prog"></i></div>
+
+      <div>
+        <div class="chain" id="chain"></div>
+        <div class="flowhint" style="margin-top:6px"><span><b>Orders</b> flow left, toward the factory</span><span><b>Cases</b> flow right, toward customers</span></div>
+      </div>
+
+      <div class="desk">
+        <div class="panel" style="display:grid;gap:14px">
+          <h3 id="deskTitle">Your dock this week</h3>
+          <div class="stats" id="stats"></div>
+          <div id="sharedBox" class="signal" hidden></div>
+        </div>
+        <div class="panel order">
+          <h3>Place your order</h3>
+          <p class="muted" id="orderHint">How many cases do you want to order from your supplier? They will arrive in about 3 weeks.</p>
+          <div class="stepper">
+            <button class="step" id="minus" aria-label="Order 1 fewer case">−</button>
+            <input id="orderQty" type="number" inputmode="numeric" min="0" max="999" value="4" aria-label="Cases to order">
+            <button class="step" id="plus" aria-label="Order 1 more case">+</button>
+          </div>
+          <button class="btn amber" id="orderBtn">Place order</button>
+          <p class="muted" style="font-size:.85rem">Tip. Think about what is already on the way to you before you order more.</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3 style="margin-bottom:8px">Your log</h3>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Week</th><th>Order received</th><th>Cases arrived</th><th>Cases shipped</th><th>Inventory</th><th>Backorder</th><th>You ordered</th><th>Your cost</th></tr></thead>
+            <tbody id="log"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="results" hidden>
+    <div class="wrap" style="gap:16px">
+      <div>
+        <div class="eyebrow" id="resRound">Round 1 results</div>
+        <h2 id="resTitle">The bullwhip strikes</h2>
+        <p class="muted" id="resWho"></p>
+      </div>
+
+      <div class="kpis" id="kpis"></div>
+
+      <div class="panel" style="display:grid;gap:12px">
+        <h3>Orders placed each week</h3>
+        <p class="muted" style="font-size:.95rem">The dark dashed line is what customers actually bought. Watch how the orders swing harder at each step back toward the factory.</p>
+        <div class="legend" id="legend"></div>
+        <div class="chartwrap"><svg id="chart" role="img" aria-label="Line chart of weekly orders by role"></svg></div>
+      </div>
+
+      <div class="panel">
+        <h3 style="margin-bottom:8px">Scoreboard</h3>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Role</th><th>Biggest order</th><th>Order swing</th><th>Inventory cost</th><th>Backorder cost</th><th>Total cost</th></tr></thead>
+            <tbody id="score"></tbody>
+          </table>
+        </div>
+        <p class="muted" style="font-size:.85rem;margin-top:8px">Order swing compares how much each role's orders bounced around with how much customer demand bounced around. A swing of 1.0 means no bullwhip. Higher means more bullwhip.</p>
+      </div>
+
+      <div class="callout" id="compare" hidden></div>
+
+      <div class="callout">
+        <p class="shot">Take a screenshot of this whole results screen for your Sim 2 submission.</p>
+      </div>
+
+      <div class="row">
+        <button class="btn amber" id="round2Btn">Play round 2 with shared sales data</button>
+        <button class="btn alt" id="againBtn">Start over</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function(){
+  const ROLES=[
+    {key:'r',name:'Retailer',desc:'Sells to customers. The only one who sees real demand.'},
+    {key:'w',name:'Wholesaler',desc:'Supplies the retailer.'},
+    {key:'d',name:'Distributor',desc:'Supplies the wholesaler.'},
+    {key:'f',name:'Factory',desc:'Brews the root beer. Furthest from customers.'}
+  ];
+  const WEEKS=20, START_INV=12, HOLD=0.5, BACK=1.0, GAIN=0.35, SMOOTH=0.3;
+  const DEMAND=Array.from({length:WEEKS},(_,i)=>i<4?4:8);
+
+  let role=1, roundNo=1, S=null, round1=null;
+  const $=id=>document.getElementById(id);
+  const money=v=>'$'+v.toFixed(2);
+
+  // Role buttons
+  const rolesEl=$('roles');
+  ROLES.forEach((r,i)=>{
+    const b=document.createElement('button');
+    b.className='role'; b.type='button'; b.id='role-'+r.key;
+    b.setAttribute('aria-pressed', i===role?'true':'false');
+    b.innerHTML='<span class="rname">'+r.name+'</span><span class="rdesc">'+r.desc+'</span>';
+    b.addEventListener('click',()=>{role=i;[...rolesEl.children].forEach((c,j)=>c.setAttribute('aria-pressed',j===i?'true':'false'));});
+    rolesEl.appendChild(b);
+  });
+
+  function newState(shared){
+    return {
+      shared, t:0,
+      tiers:ROLES.map(()=>({inv:START_INV,back:0,sq:[4,4],E:4,hold:0,backc:0,orders:[],arrived:0,shipped:0,inc:4,log:[]})),
+      orderPipe:[null,4,4,4], supplier:[4], lastOrder:[4,4,4,4]
+    };
+  }
+
+  // Receive shipments, read orders, and ship for one week
+  function beginWeek(){
+    const t=S.t;
+    for(let i=0;i<4;i++){
+      const x=S.tiers[i];
+      x.arrived=x.sq.shift();
+      x.inv+=x.arrived;
+      if(i===3) x.sq.push(S.supplier.shift());
+      const inc = i===0 ? DEMAND[t] : S.orderPipe[i];
+      const need=inc+x.back, s=Math.min(x.inv,need);
+      x.inv-=s; x.back=need-s; x.inc=inc; x.shipped=s;
+      if(i>0) S.tiers[i-1].sq.push(s);
+    }
+  }
+
+  function botOrder(i){
+    const x=S.tiers[i], net=x.inv-x.back;
+    if(S.shared){
+      const D=DEMAND[S.t];
+      const pipe=x.sq.reduce((a,b)=>a+b,0)+S.lastOrder[i]+(i===3&&S.supplier.length?S.supplier[0]:0);
+      return Math.max(0,Math.round(D+0.5*(START_INV-net)+0.5*(D*3-pipe)));
+    }
+    x.E=(1-SMOOTH)*x.E+SMOOTH*x.inc;
+    return Math.max(0,Math.round(x.E+GAIN*(START_INV-net)));
+  }
+
+  function endWeek(playerOrder){
+    const orders=[0,1,2,3].map(i=>i===role?playerOrder:botOrder(i));
+    for(let i=0;i<4;i++){
+      const x=S.tiers[i];
+      x.orders.push(orders[i]); S.lastOrder[i]=orders[i];
+      if(i<3) S.orderPipe[i+1]=orders[i]; else S.supplier.push(orders[i]);
+      const h=HOLD*x.inv, b=BACK*x.back; x.hold+=h; x.backc+=b;
+      x.log.push({w:S.t+1,inc:x.inc,arr:x.arrived,ship:x.shipped,inv:x.inv,back:x.back,ord:orders[i],cost:h+b});
+    }
+    S.t++;
+  }
+
+  function teamCost(){return S.tiers.reduce((a,x)=>a+x.hold+x.backc,0)}
+
+  function renderChain(){
+    const c=$('chain'); c.innerHTML='';
+    const order=[3,2,1,0];
+    order.forEach(i=>{
+      const x=S.tiers[i], me=i===role;
+      const d=document.createElement('div'); d.className='dock'+(me?' me':'');
+      d.innerHTML=(me?'<span class="you">YOU</span>':'')+
+        '<span class="dname">'+ROLES[i].name+'</span>'+
+        (me?'<span class="dlab">Inventory</span><span class="dval">'+x.inv+'</span>'
+           :'<span class="dlab">Inventory</span><span class="dval" title="You cannot see other companies during the game">?</span>');
+      c.appendChild(d);
+    });
+    const cu=document.createElement('div'); cu.className='dock cust';
+    cu.innerHTML='<span class="dname">Customers</span><span class="dlab">Buying</span><span class="dval">'+(role===0||S.shared?DEMAND[S.t]:'?')+'</span>';
+    c.appendChild(cu);
+  }
+
+  function renderDesk(){
+    const x=S.tiers[role];
+    const inTransit=x.sq.reduce((a,b)=>a+b,0)+(role===3?S.supplier.reduce((a,b)=>a+b,0):0);
+    const fromWho = role===0?'Customers ordered':ROLES[role-1].name+' ordered';
+    const stats=[
+      {k:fromWho,v:x.inc,cls:'hl'},
+      {k:'Cases arrived',v:x.arrived},
+      {k:'Cases shipped',v:x.shipped},
+      {k:'Inventory',v:x.inv},
+      {k:'Backorder',v:x.back,cls:x.back>0?'bad':''},
+      {k:'On the way to you',v:inTransit}
+    ];
+    $('stats').innerHTML=stats.map(s=>'<div class="stat '+(s.cls||'')+'"><div class="k">'+s.k+'</div><div class="v">'+s.v+'</div></div>').join('');
+    const sb=$('sharedBox');
+    if(S.shared){sb.hidden=false;sb.innerHTML='Shared sales data. Customers bought <b>'+DEMAND[S.t]+'</b> cases at the store this week.';}
+    else sb.hidden=true;
+    $('weekLabel').textContent='Week '+(S.t+1);
+    $('prog').style.width=(S.t/WEEKS*100)+'%';
+    $('teamCost').textContent=money(teamCost());
+    $('orderHint').textContent = role===3
+      ? 'How many cases should the brewery make? New batches are ready in about 3 weeks.'
+      : 'How many cases do you want to order from the '+ROLES[role+1].name.toLowerCase()+'? They arrive in about 3 weeks.';
+    const rows=x.log.slice().reverse().map(r=>'<tr><td>'+r.w+'</td><td>'+r.inc+'</td><td>'+r.arr+'</td><td>'+r.ship+'</td><td>'+r.inv+'</td><td>'+r.back+'</td><td>'+r.ord+'</td><td>'+money(r.cost)+'</td></tr>').join('');
+    $('log').innerHTML=rows||'<tr><td colspan="8" class="muted">Your weekly history will show here.</td></tr>';
+    renderChain();
+  }
+
+  function show(id){['intro','game','results'].forEach(s=>$(s).hidden=s!==id);window.scrollTo(0,0);}
+
+  function startRound(shared){
+    S=newState(shared);
+    $('roundLabel').textContent=shared?'Round 2 · Shared sales data':'Round 1 · Classic';
+    beginWeek();
+    $('orderQty').value=4;
+    renderDesk();
+    show('game');
+  }
+
+  function placeOrder(){
+    let q=parseInt($('orderQty').value,10);
+    if(!Number.isFinite(q)||q<0){q=0;}
+    q=Math.min(q,999);
+    endWeek(q);
+    if(S.t>=WEEKS){finish();return;}
+    beginWeek();
+    renderDesk();
+  }
+
+  function sd(a){const m=a.reduce((x,y)=>x+y,0)/a.length;return Math.sqrt(a.reduce((x,y)=>x+(y-m)*(y-m),0)/a.length);}
+
+  function finish(){
+    const dsd=sd(DEMAND);
+    const rows=S.tiers.map((x,i)=>({i,name:ROLES[i].name,max:Math.max(...x.orders),swing:sd(x.orders)/dsd,hold:x.hold,back:x.backc,total:x.hold+x.backc}));
+    const total=rows.reduce((a,r)=>a+r.total,0);
+    const me=rows[role];
+    const result={total,rows,shared:S.shared};
+    if(!S.shared) round1=result;
+
+    $('resRound').textContent=(S.shared?'Round 2':'Round 1')+' results';
+    $('resTitle').textContent=S.shared?'Sharing data tames the bullwhip':'The bullwhip strikes';
+    const nm=$('studentName').value.trim();
+    $('resWho').textContent=(nm?nm+' played the ':'You played the ')+ROLES[role].name+'. Customers bought 4 cases a week, then 8 a week from week 5 on.';
+
+    const factoryMax=rows[3].max;
+    $('kpis').innerHTML=[
+      {k:'Team total cost',v:money(total)},
+      {k:'Your cost ('+ROLES[role].name+')',v:money(me.total)},
+      {k:'Biggest customer week',v:Math.max(...DEMAND)+' cases'},
+      {k:'Biggest factory order',v:factoryMax+' cases'}
+    ].map(s=>'<div class="stat"><div class="k">'+s.k+'</div><div class="v">'+s.v+'</div></div>').join('');
+
+    $('score').innerHTML='<tr><td>Customers</td><td>'+Math.max(...DEMAND)+'</td><td>1.0</td><td>–</td><td>–</td><td>–</td></tr>'+
+      rows.map(r=>'<tr class="'+(r.i===role?'mine':'')+'"><td>'+r.name+(r.i===role?' (you)':'')+'</td><td>'+r.max+'</td><td>'+r.swing.toFixed(1)+'</td><td>'+money(r.hold)+'</td><td>'+money(r.back)+'</td><td>'+money(r.total)+'</td></tr>').join('')+
+      '<tr><td><b>Team</b></td><td></td><td></td><td></td><td></td><td><b>'+money(total)+'</b></td></tr>';
+
+    drawChart();
+
+    const cmp=$('compare');
+    if(S.shared && round1){
+      const diff=round1.total-total;
+      cmp.hidden=false;
+      cmp.innerHTML='<b>Round 1 vs. round 2.</b> Team cost went from '+money(round1.total)+' to '+money(total)+
+        (diff>0?', a savings of '+money(diff)+'.':'.')+' The factory\'s biggest order went from '+round1.rows[3].max+' to '+factoryMax+' cases. Same customers, same delays. The only change was that everyone could see real sales.';
+    } else cmp.hidden=true;
+
+    $('round2Btn').hidden=S.shared;
+    show('results');
+  }
+
+  function drawChart(){
+    const svg=$('chart'), W=900, H=360, m={l:48,r:96,t:16,b:40};
+    svg.setAttribute('viewBox','0 0 '+W+' '+H); svg.setAttribute('width',W); svg.setAttribute('height',H);
+    svg.style.maxWidth='none';
+    const series=[{name:'Customers',color:'var(--c-cust)',data:DEMAND,dash:'6 5'}].concat(
+      S.tiers.map((x,i)=>({name:ROLES[i].name+(i===role?' (you)':''),color:['var(--c-r)','var(--c-w)','var(--c-d)','var(--c-f)'][i],data:x.orders,width:i===role?4:2.5})));
+    const maxV=Math.max(10,...series.flatMap(s=>s.data));
+    const step=maxV<=20?5:maxV<=50?10:maxV<=100?20:50;
+    const top=Math.ceil(maxV/step)*step;
+    const x=i=>m.l+(i)*(W-m.l-m.r)/(WEEKS-1);
+    const y=v=>m.t+(H-m.t-m.b)*(1-v/top);
+    let g='';
+    for(let v=0;v<=top;v+=step){
+      g+='<line x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="var(--line)" stroke-width="1"/>';
+      g+='<text x="'+(m.l-8)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="12" fill="var(--muted)">'+v+'</text>';
+    }
+    [1,5,10,15,20].forEach(wk=>{
+      g+='<text x="'+x(wk-1)+'" y="'+(H-m.b+18)+'" text-anchor="middle" font-size="12" fill="var(--muted)">'+wk+'</text>';
+    });
+    g+='<text x="'+((m.l+W-m.r)/2)+'" y="'+(H-4)+'" text-anchor="middle" font-size="12" fill="var(--muted)">Week</text>';
+    g+='<text x="14" y="'+(m.t+(H-m.t-m.b)/2)+'" text-anchor="middle" font-size="12" fill="var(--muted)" transform="rotate(-90 14 '+(m.t+(H-m.t-m.b)/2)+')">Cases ordered</text>';
+    // lines, customers last so it sits on top
+    const ordered=series.slice(1).concat(series[0]);
+    const ends=[];
+    ordered.forEach(s=>{
+      const pts=s.data.map((v,i)=>x(i)+','+y(v)).join(' ');
+      g+='<polyline fill="none" stroke="'+s.color+'" stroke-width="'+(s.width||2.5)+'" stroke-linejoin="round" stroke-linecap="round"'+(s.dash?' stroke-dasharray="'+s.dash+'"':'')+' points="'+pts+'"/>';
+      const lv=s.data[s.data.length-1];
+      g+='<circle cx="'+x(WEEKS-1)+'" cy="'+y(lv)+'" r="3.5" fill="'+s.color+'"/>';
+      ends.push({y:y(lv),name:s.name.replace(' (you)',''),color:s.color});
+    });
+    // end labels, nudged apart
+    ends.sort((a,b)=>a.y-b.y);
+    for(let k=1;k<ends.length;k++){ if(ends[k].y-ends[k-1].y<14) ends[k].y=ends[k-1].y+14; }
+    const floor=H-m.b+4; if(ends.length&&ends[ends.length-1].y>floor){ ends[ends.length-1].y=floor; for(let k=ends.length-2;k>=0;k--){ if(ends[k+1].y-ends[k].y<14) ends[k].y=ends[k+1].y-14; } }
+    ends.forEach(e=>{ g+='<text x="'+(x(WEEKS-1)+8)+'" y="'+(e.y+4)+'" font-size="12" font-weight="700" fill="'+e.color+'">'+e.name+'</text>'; });
+    svg.innerHTML=g;
+    $('legend').innerHTML=series.map(s=>'<span><i style="background:'+s.color+(s.dash?';background:repeating-linear-gradient(90deg,'+s.color+' 0 5px,transparent 5px 9px)':'')+'"></i>'+s.name+'</span>').join('');
+  }
+
+  $('startBtn').addEventListener('click',()=>{roundNo=1;round1=null;startRound(false);});
+  $('round2Btn').addEventListener('click',()=>{roundNo=2;startRound(true);});
+  $('againBtn').addEventListener('click',()=>{round1=null;show('intro');});
+  $('orderBtn').addEventListener('click',placeOrder);
+  $('minus').addEventListener('click',()=>{const q=$('orderQty');q.value=Math.max(0,(parseInt(q.value,10)||0)-1);});
+  $('plus').addEventListener('click',()=>{const q=$('orderQty');q.value=Math.min(999,(parseInt(q.value,10)||0)+1);});
+  $('orderQty').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();placeOrder();}});
+})();
+</script>
+</body>
+</html>

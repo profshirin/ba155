@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Warehouse Locator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Layout: a site planner's desk. A coordinate map on the left, the worksheet on the right, then site visits and a what if. */
+:root{
+  --bg:#F2F5F8; --panel:#FFFFFF; --ink:#0F1B2D; --muted:#5A6B80; --line:#D5DEE8; --grid:#E6ECF2;
+  --navy:#002E66; --teal:#00ACC1; --teal-ink:#007C8C; --sun:#E0861F; --sun-soft:#FDEFDC;
+  --up:#1E8E5A; --up-soft:#E3F5EC; --down:#C8382B; --down-soft:#FCE8E6;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1420; --panel:#122033; --ink:#E8EEF5; --muted:#9AAABD; --line:#24364D; --grid:#1A2B40;
+  --navy:#8DB8FF; --teal:#35C8DB; --teal-ink:#5FD6E6; --sun:#F2A54A; --sun-soft:#3A2812;
+  --up:#4CC98A; --up-soft:#173527; --down:#FF7A6B; --down-soft:#3D1D1A; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1420; --panel:#122033; --ink:#E8EEF5; --muted:#9AAABD; --line:#24364D; --grid:#1A2B40;
+  --navy:#8DB8FF; --teal:#35C8DB; --teal-ink:#5FD6E6; --sun:#F2A54A; --sun-soft:#3A2812;
+  --up:#4CC98A; --up-soft:#173527; --down:#FF7A6B; --down-soft:#3D1D1A; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;padding-inline:16px;padding-block:20px 48px}
+.wrap{max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.wrap>*{min-width:0}
+.wrap .wrap{margin:0;max-width:none;width:100%}
+h1,h2,h3{font-family:var(--display);line-height:1.05;margin:0;text-wrap:balance;color:var(--navy);text-transform:uppercase}
+h1{font-size:clamp(2.6rem,7vw,4.2rem);font-weight:700}
+h2{font-size:1.9rem;font-weight:700;letter-spacing:.02em}
+h3{font-size:1.25rem;font-weight:600;letter-spacing:.04em}
+p{margin:0}
+.eyebrow{font-family:var(--display);font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--sun);font-size:.95rem}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px}
+.muted{color:var(--muted)}
+.lead{max-width:65ch;font-size:1.08rem}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:16px}
+.grid2>*{min-width:0}
+button{font:inherit;cursor:pointer}
+.btn{font-family:var(--display);font-weight:700;font-size:1.15rem;text-transform:uppercase;letter-spacing:.06em;border:0;border-radius:8px;padding:12px 22px;background:var(--navy);color:var(--panel)}
+.btn.sun{background:var(--sun);color:#1B0F06}
+.btn.alt{background:transparent;color:var(--navy);border:2px solid var(--navy)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+a.btn{display:inline-block;text-decoration:none}
+button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+input[type=text],input[type=number]{font:inherit;padding:10px 12px;border:2px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}
+input[type=text]{width:100%;max-width:420px}
+input[type=number]{width:170px;font-family:var(--display);font-size:1.4rem;font-weight:700}
+label.field{display:flex;flex-direction:column;gap:6px;font-weight:700}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+td,th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+td:first-child,th:first-child{text-align:left}
+th{font-family:var(--display);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;font-size:.9rem}
+.tablewrap,.mapwrap{overflow-x:auto}
+.ok{color:var(--up);font-weight:700} .no{color:var(--down);font-weight:700}
+.fb{font-size:.92rem;border-radius:8px;padding:8px 10px}
+.fb.right{background:var(--up-soft)} .fb.wrong{background:var(--down-soft)}
+svg text{font-family:var(--body)}
+.opts{display:grid;gap:8px}
+.opt{text-align:left;border:2px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:10px 14px}
+.opt[aria-pressed="true"]{border-color:var(--sun);background:var(--sun-soft)}
+.opt b{font-family:var(--display);font-size:1.15rem;text-transform:uppercase;color:var(--navy)}
+.callout{background:var(--sun-soft);border-left:5px solid var(--sun);border-radius:0 10px 10px 0;padding:12px 16px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(170px,100%),1fr));gap:12px}
+.stat{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--panel)}
+.stat .k{font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.stat .v{font-family:var(--display);font-size:1.7rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.3rem;font-weight:700;letter-spacing:.06em;padding:10px 14px;border:2px dashed var(--navy);border-radius:8px;background:var(--panel);user-select:all;overflow-wrap:anywhere}
+.shot{font-family:var(--display);text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--teal-ink)}
+</style>
+<style>body{margin:0}</style>
+</head>
+<body>
+<div class="wrap">
+
+<section id="intro" class="wrap" style="gap:18px">
+  <div class="eyebrow">BA 155 · Sim 6 · Chapter 9</div>
+  <h1>Where Should the Warehouse Go?</h1>
+  <p class="lead">Pearl Tea Café is growing. It now has five stores across Southern California, and the owner wants one warehouse to supply them all. Your job is to find the best spot. You will use the center of gravity method, visit the spot on Google Maps, and see what happens when the map changes.</p>
+  <div class="panel" style="display:grid;gap:14px">
+    <label class="field" for="studentName">Your full name, as it appears in Canvas
+      <input type="text" id="studentName" autocomplete="name" placeholder="First and last name">
+    </label>
+    <p class="muted" style="font-size:.92rem">Have a calculator or Excel open. This is a light week, and the sim takes about 30 minutes.</p>
+    <div class="row"><button class="btn sun" id="startBtn">Start</button><span class="muted" id="nameNote"></span></div>
+  </div>
+</section>
+
+<section id="p1" class="wrap" style="gap:16px" hidden>
+  <div><div class="eyebrow">Part 1 of 3 · Do the math</div><h2>Find the center of gravity</h2>
+  <p class="muted">Latitude tells you how far north a place is. Longitude tells you how far east or west. In Southern California, longitude is negative, so keep the minus sign!</p></div>
+  <div class="grid2">
+    <div class="panel" style="display:grid;gap:8px"><h3>The stores</h3><div class="tablewrap"><table id="stores"></table></div>
+      <p class="muted" style="font-size:.9rem">Volume is cases shipped to each store per week.</p></div>
+    <div class="panel"><div class="mapwrap"><svg id="map" role="img" aria-label="Map of the five store locations by latitude and longitude"></svg></div></div>
+  </div>
+  <div class="panel" style="display:grid;gap:12px">
+    <h3>Your answer, to 4 decimal places</h3>
+    <p class="muted" style="font-size:.95rem">Center latitude = sum of (latitude × volume) ÷ total volume. Center longitude = sum of (longitude × volume) ÷ total volume.</p>
+    <div class="row">
+      <label class="field" for="latIn">Center latitude<input type="number" id="latIn" step="0.0001" inputmode="decimal" placeholder="33.xxxx"></label>
+      <label class="field" for="lngIn">Center longitude<input type="number" id="lngIn" step="0.0001" inputmode="decimal" placeholder="-117.xxxx"></label>
+    </div>
+    <div class="fb" id="cogFb" hidden></div>
+    <div class="row"><button class="btn" id="checkCog">Check my math</button></div>
+    <div class="tablewrap" id="workWrap" hidden><table id="work"></table></div>
+  </div>
+  <div class="row" id="toP2Row" hidden><button class="btn sun" id="toP2">Next, visit the spot</button></div>
+</section>
+
+<section id="p2" class="wrap" style="gap:16px" hidden>
+  <div><div class="eyebrow">Part 2 of 3 · Reality check</div><h2>Visit your center of gravity</h2></div>
+  <div class="panel" style="display:grid;gap:12px">
+    <p>Your center of gravity is at <b id="cogTxt"></b>. Open it in Google Maps and switch to satellite view. What is actually there?</p>
+    <div class="row"><a class="btn" id="mapLink" target="_blank" rel="noopener">Open in Google Maps</a></div>
+    <label class="field" for="whatIn">Which city or neighborhood is it in, and what is there?
+      <input type="text" id="whatIn" placeholder="For example, Santa Ana, near homes and a shopping center">
+    </label>
+    <p style="font-weight:700">Could you build a large warehouse on that exact spot?</p>
+    <div class="opts" id="buildOpts"></div>
+  </div>
+  <div class="panel" style="display:grid;gap:12px">
+    <h3>Compare real warehouse sites</h3>
+    <p class="muted" style="font-size:.95rem">Weighted average miles is the straight line distance to each store, weighted by volume. Lower means the warehouse is closer to where the cases go.</p>
+    <div class="tablewrap"><table id="sites"></table></div>
+    <div class="callout" id="surprise"></div>
+    <p style="font-weight:700">Where would you build the warehouse?</p>
+    <div class="opts" id="siteOpts"></div>
+  </div>
+  <div class="row"><button class="btn sun" id="toP3" disabled>Next, change the map</button></div>
+</section>
+
+<section id="p3" class="wrap" style="gap:16px" hidden>
+  <div><div class="eyebrow">Part 3 of 3 · What if?</div><h2>Move one store</h2>
+  <p class="muted">The owner is thinking about moving one store. Pick a move and watch the center of gravity shift.</p></div>
+  <div class="grid2">
+    <div class="panel" style="display:grid;gap:8px"><div class="opts" id="moveOpts"></div><div id="moveResult"></div></div>
+    <div class="panel"><div class="mapwrap"><svg id="map2" role="img" aria-label="Map showing the old and new center of gravity"></svg></div></div>
+  </div>
+  <div class="row"><button class="btn sun" id="finish" disabled>See my results</button></div>
+</section>
+
+<section id="res" class="wrap" style="gap:16px" hidden>
+  <div><div class="eyebrow">Results</div><h2 id="who"></h2></div>
+  <div class="kpis" id="kpis"></div>
+  <div class="panel" style="display:grid;gap:10px">
+    <span class="muted" style="text-transform:uppercase;letter-spacing:.05em;font-size:.85rem">Your result code</span>
+    <div class="code" id="code"></div>
+    <p class="muted" style="font-size:.92rem">Copy this code into your Sim 6 submission template. No screenshot needed.</p>
+    <div class="row"><button class="btn alt" id="copyBtn">Copy code</button><span class="muted" id="copied"></span></div>
+  </div>
+  <div class="panel" id="lessons" style="display:grid;gap:8px"></div>
+</section>
+
+<section id="verify" class="wrap" style="gap:16px" hidden>
+  <div><div class="eyebrow">Instructor tools</div><h2>Check Sim 6 codes</h2>
+  <p class="muted">Paste one student per line as <b>Name, code</b>.</p></div>
+  <textarea id="vin" spellcheck="false" style="font:inherit;font-family:ui-monospace,Menlo,Consolas,monospace;width:100%;min-height:160px;padding:10px;border:2px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)" aria-label="Names and codes"></textarea>
+  <div class="row"><button class="btn sun" id="vbtn">Check codes</button></div>
+  <div class="panel"><div class="tablewrap"><table id="vout"><tr><td class="muted">Results will show here.</td></tr></table></div></div>
+</section>
+
+</div>
+
+<script>
+(function(){
+  const SALT='COG26';
+  const STORES=[{n:'Cerritos',lat:33.8583,lng:-118.0648,v:120},{n:'Irvine',lat:33.6846,lng:-117.8265,v:90},{n:'Riverside',lat:33.9533,lng:-117.3962,v:60},{n:'Pasadena',lat:34.1478,lng:-118.1445,v:80},{n:'San Diego',lat:32.7157,lng:-117.1611,v:50}];
+  const SITES=[{id:'C',n:'Your center of gravity'},{id:'A',n:'Anaheim',lat:33.8366,lng:-117.9143,note:'Dense city near Disneyland. Some industrial land, but it is expensive and scarce.'},{id:'I',n:'City of Industry',lat:34.0198,lng:-117.9587,note:'Zoned for warehouses, right on the 60 freeway, with rail nearby.'},{id:'O',n:'Ontario',lat:34.0633,lng:-117.6509,note:'Heart of the Inland Empire warehouse hub. More land, an airport, and freeways in every direction.'},{id:'L',n:'Long Beach',lat:33.7701,lng:-118.1937,note:'Next to the port. Great for imports, but land near the port is crowded.'}];
+  const MOVES=[{id:'V',from:'San Diego',to:{n:'Las Vegas',lat:36.1699,lng:-115.1398},label:'Move the San Diego store to Las Vegas'},{id:'T',from:'San Diego',to:{n:'Temecula',lat:33.4936,lng:-117.1484},label:'Move the San Diego store to Temecula'},{id:'S',from:'Pasadena',to:{n:'Santa Clarita',lat:34.3917,lng:-118.5426},label:'Move the Pasadena store to Santa Clarita'},{id:'P',from:'Riverside',to:{n:'Palm Springs',lat:33.8303,lng:-116.5453},label:'Move the Riverside store to Palm Springs'}];
+  const $=id=>document.getElementById(id);
+  const show=id=>{['intro','p1','p2','p3','res','verify'].forEach(s=>$(s).hidden=s!==id);window.scrollTo(0,0);};
+  const cog=S=>{const v=S.reduce((a,s)=>a+s.v,0);return {lat:S.reduce((a,s)=>a+s.lat*s.v,0)/v,lng:S.reduce((a,s)=>a+s.lng*s.v,0)/v};};
+  function hav(a,b,c,d){const R=3958.8,r=x=>x*Math.PI/180;const p1=r(a),p2=r(c),dp=p2-p1,dl=r(d-b);const h=Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;return 2*R*Math.asin(Math.sqrt(h));}
+  const wmiles=(lat,lng,S)=>{const v=S.reduce((a,s)=>a+s.v,0);return S.reduce((a,s)=>a+hav(lat,lng,s.lat,s.lng)*s.v,0)/v;};
+  const C=cog(STORES);
+  function checksum(s){let h=7;for(let i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))%1679616;}return h.toString(36).toUpperCase().padStart(4,'0');}
+  const norm=s=>s.toUpperCase().replace(/\s+/g,' ').trim();
+  let name='', correct=0, build=null, site=null, move=null;
+
+  const LBL={'Pasadena':'n','Cerritos':'w','Irvine':'s','Riverside':'e','San Diego':'e','Las Vegas':'w','Temecula':'e','Santa Clarita':'n','Palm Springs':'e'};
+  function drawMap(svg,stores,pts){
+    const W=520,H=420,m=44;
+    const all=stores.concat(pts||[]);
+    let la0=Math.min(...all.map(p=>p.lat))-0.25, la1=Math.max(...all.map(p=>p.lat))+0.25;
+    let lo0=Math.min(...all.map(p=>p.lng))-0.35, lo1=Math.max(...all.map(p=>p.lng))+0.35;
+    const k=Math.cos(34*Math.PI/180), pw=W-2*m, ph=H-2*m;
+    const sx=pw/((lo1-lo0)*k), sy=ph/(la1-la0), sc=Math.min(sx,sy);
+    const cx=(lo0+lo1)/2, cy=(la0+la1)/2;
+    const x=l=>W/2+(l-cx)*k*sc, y=l=>H/2-(l-cy)*sc;
+    svg.setAttribute('viewBox','0 0 '+W+' '+H);svg.setAttribute('width',W);svg.setAttribute('height',H);svg.style.maxWidth='100%';svg.style.height='auto';
+    const span=Math.max(la1-la0,(lo1-lo0)), step=span>3?1:0.5;
+    let g='';
+    for(let a=Math.ceil(la0/step)*step;a<=la1;a+=step) g+='<line x1="'+m+'" x2="'+(W-m)+'" y1="'+y(a)+'" y2="'+y(a)+'" stroke="var(--grid)"/><text x="'+(m-6)+'" y="'+(y(a)+4)+'" text-anchor="end" font-size="11" fill="var(--muted)">'+a.toFixed(1)+'°</text>';
+    for(let o=Math.ceil(lo0/step)*step;o<=lo1;o+=step){if(x(o)<m||x(o)>W-m)continue;g+='<line y1="'+m+'" y2="'+(H-m)+'" x1="'+x(o)+'" x2="'+x(o)+'" stroke="var(--grid)"/><text y="'+(H-m+16)+'" x="'+x(o)+'" text-anchor="middle" font-size="11" fill="var(--muted)">'+o.toFixed(1)+'°</text>';}
+    const place=(px,py,r,dir,text,col,w)=>{const o={n:[0,-r-6,'middle'],s:[0,r+14,'middle'],e:[r+5,4,'start'],w:[-r-5,4,'end']}[dir];return '<text x="'+(px+o[0])+'" y="'+(py+o[1])+'" text-anchor="'+o[2]+'" font-size="12" font-weight="'+(w||700)+'" fill="'+col+'">'+text+'</text>';};
+    stores.forEach(s=>{const r=4+Math.sqrt(s.v)/1.6;g+='<circle cx="'+x(s.lng)+'" cy="'+y(s.lat)+'" r="'+r+'" fill="var(--teal)" fill-opacity=".85" stroke="var(--panel)" stroke-width="1.5"/>'+place(x(s.lng),y(s.lat),r,LBL[s.n]||'e',s.n+' ('+s.v+')','var(--ink)');});
+    (pts||[]).forEach(p=>{g+='<rect x="'+(x(p.lng)-7)+'" y="'+(y(p.lat)-7)+'" width="14" height="14" transform="rotate(45 '+x(p.lng)+' '+y(p.lat)+')" fill="'+p.c+'" stroke="var(--panel)" stroke-width="1.5"/>'+(p.label?place(x(p.lng),y(p.lat),8,p.dir||'e',p.label,p.c):'');});
+    svg.innerHTML=g;
+  }
+
+  // Part 1
+  $('stores').innerHTML='<tr><th>Store</th><th>Latitude</th><th>Longitude</th><th>Volume</th></tr>'+STORES.map(s=>'<tr><td>'+s.n+'</td><td>'+s.lat.toFixed(4)+'</td><td>'+s.lng.toFixed(4)+'</td><td>'+s.v+'</td></tr>').join('')+'<tr><td><b>Total</b></td><td></td><td></td><td><b>'+STORES.reduce((a,s)=>a+s.v,0)+'</b></td></tr>';
+  drawMap($('map'),STORES,[]);
+  $('checkCog').addEventListener('click',()=>{
+    const la=parseFloat($('latIn').value), lo=parseFloat($('lngIn').value);
+    const okLa=Math.abs(la-C.lat)<=0.002, okLo=Math.abs(lo-C.lng)<=0.002;
+    correct=(okLa?1:0)+(okLo?1:0);
+    const fb=$('cogFb'); fb.hidden=false; fb.className='fb '+(correct===2?'right':'wrong');
+    fb.innerHTML=(correct===2?'<b class="ok">Both correct!</b> ':'<b class="no">'+(correct===1?'One of two is correct.':'Not quite.')+'</b> '+(!okLo&&Number.isFinite(lo)&&lo>0?'Did you drop the minus sign on longitude? ':''))+'The center of gravity is <b>'+C.lat.toFixed(4)+', '+C.lng.toFixed(4)+'</b>. Here is the work.';
+    const V=STORES.reduce((a,s)=>a+s.v,0);
+    $('work').innerHTML='<tr><th>Store</th><th>Lat × Vol</th><th>Lng × Vol</th></tr>'+STORES.map(s=>'<tr><td>'+s.n+'</td><td>'+(s.lat*s.v).toFixed(3)+'</td><td>'+(s.lng*s.v).toFixed(3)+'</td></tr>').join('')+
+      '<tr><td><b>Sum</b></td><td><b>'+STORES.reduce((a,s)=>a+s.lat*s.v,0).toFixed(3)+'</b></td><td><b>'+STORES.reduce((a,s)=>a+s.lng*s.v,0).toFixed(3)+'</b></td></tr><tr><td><b>÷ '+V+'</b></td><td><b>'+C.lat.toFixed(4)+'</b></td><td><b>'+C.lng.toFixed(4)+'</b></td></tr>';
+    $('workWrap').hidden=false; $('latIn').disabled=true; $('lngIn').disabled=true; $('checkCog').hidden=true; $('toP2Row').hidden=false;
+    drawMap($('map'),STORES,[{lat:C.lat,lng:C.lng,c:'var(--sun)',label:'Center of gravity',dir:'e'}]);
+  });
+
+  // Part 2
+  function opts(el,list,cur,set){el.innerHTML=list.map(o=>'<button type="button" class="opt" id="'+el.id+'-'+o.id+'" aria-pressed="'+(cur===o.id)+'"><b>'+o.t+'</b>'+(o.d?'<br><span>'+o.d+'</span>':'')+'</button>').join('');list.forEach(o=>$(el.id+'-'+o.id).addEventListener('click',()=>{set(o.id);opts(el,list,o.id,set);}));}
+  const BUILD=[{id:'Y',t:'Yes',d:'There is open, industrial land with good road access.'},{id:'N',t:'No',d:'It is homes, shops, roads, or something else you cannot easily replace.'},{id:'U',t:'Not sure',d:'It might work, but I would need to check zoning and land prices.'}];
+  function canGo(){$('toP3').disabled=!(build&&site);}
+  $('toP2').addEventListener('click',()=>{
+    $('cogTxt').textContent=C.lat.toFixed(4)+', '+C.lng.toFixed(4);
+    $('mapLink').href='https://www.google.com/maps/search/?api=1&query='+C.lat.toFixed(4)+','+C.lng.toFixed(4);
+    opts($('buildOpts'),BUILD,build,v=>{build=v;canGo();});
+    const rows=SITES.map(s=>{const la=s.id==='C'?C.lat:s.lat, lo=s.id==='C'?C.lng:s.lng;return {...s,la,lo,mi:wmiles(la,lo,STORES)};});
+    $('sites').innerHTML='<tr><th>Site</th><th>Weighted average miles</th><th style="text-align:left">Notes</th></tr>'+rows.map(r=>'<tr><td>'+r.n+'</td><td>'+r.mi.toFixed(1)+'</td><td style="text-align:left;white-space:normal;min-width:240px">'+(r.note||'The math answer. Check what is really there.')+'</td></tr>').join('');
+    const an=rows.find(r=>r.id==='A'), cg=rows.find(r=>r.id==='C');
+    $('surprise').innerHTML='<b>Surprise!</b> Anaheim is '+an.mi.toFixed(1)+' weighted miles from the stores, a little less than your center of gravity at '+cg.mi.toFixed(1)+'. The center of gravity averages map coordinates. It is a great starting point, but it is not always the spot with the shortest total distance, and it knows nothing about roads, land prices, or zoning.';
+    opts($('siteOpts'),rows.map(r=>({id:r.id,t:r.n,d:r.mi.toFixed(1)+' weighted miles'})),site,v=>{site=v;canGo();});
+    show('p2');
+  });
+
+  // Part 3
+  $('toP3').addEventListener('click',()=>{
+    opts($('moveOpts'),MOVES.map(m=>({id:m.id,t:m.label})),move,v=>{move=v;renderMove();$('finish').disabled=false;});
+    drawMap($('map2'),STORES,[{lat:C.lat,lng:C.lng,c:'var(--sun)',label:'Center of gravity',dir:'e'}]);
+    show('p3');
+  });
+  function moved(){const m=MOVES.find(x=>x.id===move);return {m,S:STORES.map(s=>s.n===m.from?{n:m.to.n,lat:m.to.lat,lng:m.to.lng,v:s.v}:s)};}
+  function renderMove(){
+    const {m,S}=moved(), N=cog(S), shift=hav(C.lat,C.lng,N.lat,N.lng);
+    $('moveResult').innerHTML='<div class="callout"><b>'+m.label+'.</b> The center of gravity moves to <b>'+N.lat.toFixed(4)+', '+N.lng.toFixed(4)+'</b>, about <b>'+shift.toFixed(1)+' miles</b> from where it was. '+(shift>20?'One far away store pulled the whole warehouse with it. Should one store decide where everyone else’s cases come from?':'A nearby move barely changes the answer.')+'</div>';
+    drawMap($('map2'),S,[{lat:C.lat,lng:C.lng,c:'var(--muted)',label:'Before',dir:'e'},{lat:N.lat,lng:N.lng,c:'var(--sun)',label:'After',dir:'e'}]);
+  }
+
+  // Results
+  $('finish').addEventListener('click',()=>{
+    const {m,S}=moved(), N=cog(S), shift=hav(C.lat,C.lng,N.lat,N.lng);
+    const code='COG-'+correct+site+m.id+'-'+checksum(norm(name)+'|'+correct+site+m.id+'|'+SALT);
+    $('who').textContent=name+'’s site report';
+    const siteName=SITES.find(s=>s.id===site).n;
+    $('kpis').innerHTML=[{k:'Math check',v:correct+' of 2 correct'},{k:'Center of gravity',v:C.lat.toFixed(4)+', '+C.lng.toFixed(4)},{k:'Your pick',v:siteName},{k:'Store move',v:m.to.n},{k:'Shift',v:shift.toFixed(1)+' miles'}].map(s=>'<div class="stat"><div class="k">'+s.k+'</div><div class="v">'+s.v+'</div></div>').join('');
+    $('code').textContent=code;
+    $('lessons').innerHTML='<h3>What you found</h3><ul style="margin:0;padding-left:1.2em;display:grid;gap:6px"><li>The center of gravity pulls toward the stores that buy the most. Cerritos, with 120 cases a week, has the biggest pull.</li><li>The math answer landed in a busy area, not on open industrial land. Real site choices also weigh land cost, zoning, freeways, and workers.</li><li>That is why so many real warehouses sit in places like Ontario and City of Industry. They are a little farther from some stores, but land, roads, and zoning make them work.</li><li>Moving one far away store can drag the whole answer with it. Volume and distance both matter.</li></ul><p class="shot">Copy your result code into the Sim 6 submission template. No screenshot needed.</p>';
+    show('res');
+  });
+
+  $('copyBtn').addEventListener('click',()=>{const t=$('code').textContent;const sel=()=>{const r=document.createRange();r.selectNodeContents($('code'));const s=getSelection();s.removeAllRanges();s.addRange(r);$('copied').textContent='Press Ctrl+C or Command+C to copy.';};try{navigator.clipboard.writeText(t).then(()=>{$('copied').textContent='Copied.';},sel);}catch(e){sel();}});
+  $('startBtn').addEventListener('click',()=>{name=$('studentName').value.trim();if(name.split(/\s+/).length<2){$('nameNote').textContent='Please enter your first and last name.';$('studentName').focus();return;}show('p1');});
+
+  $('vbtn').addEventListener('click',()=>{
+    const SN=Object.fromEntries(SITES.map(s=>[s.id,s.n])), MN=Object.fromEntries(MOVES.map(m=>[m.id,m.to.n]));
+    $('vout').innerHTML='<tr><th>Name</th><th>Math correct</th><th>Site</th><th>Store move</th><th>Code check</th></tr>'+$('vin').value.split(/\n/).map(l=>l.trim()).filter(Boolean).map(l=>{
+      const i=l.lastIndexOf(','); const nm=i<0?l:l.slice(0,i).trim(), code=i<0?'':l.slice(i+1).trim().toUpperCase();
+      const mm=code.match(/^COG-([0-2])([CAIOL])([VTSP])-([0-9A-Z]{4})$/);
+      const ok=!!mm&&checksum(norm(nm)+'|'+mm[1]+mm[2]+mm[3]+'|'+SALT)===mm[4];
+      return '<tr><td>'+nm.replace(/</g,'&lt;')+'</td><td>'+(mm?mm[1]+' of 2':'')+'</td><td>'+(mm?SN[mm[2]]:'')+'</td><td>'+(mm?MN[mm[3]]:'')+'</td><td class="'+(ok?'ok':'no')+'">'+(ok?'Valid':'Does not match')+'</td></tr>';}).join('');
+  });
+  if(location.hash==='#verify'){show('verify');}
+})();
+</script>
+</body>
+</html>

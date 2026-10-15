@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forecast Challenge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Layout: a café manager's clipboard. A sales chart and the week ahead, a forecast you lock in, then an order audit, then the reveal. */
+:root{
+  --bg:#F2F5F8; --panel:#FFFFFF; --ink:#0F1B2D; --muted:#5A6B80; --line:#D5DEE8;
+  --navy:#002E66; --teal:#00ACC1; --teal-ink:#007C8C; --pumpkin:#D9661B; --pumpkin-soft:#FDEBDD;
+  --up:#1E8E5A; --up-soft:#E3F5EC; --down:#C8382B; --down-soft:#FCE8E6;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1420; --panel:#122033; --ink:#E8EEF5; --muted:#9AAABD; --line:#24364D;
+  --navy:#8DB8FF; --teal:#35C8DB; --teal-ink:#5FD6E6; --pumpkin:#F29A55; --pumpkin-soft:#3A2414;
+  --up:#4CC98A; --up-soft:#173527; --down:#FF7A6B; --down-soft:#3D1D1A; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1420; --panel:#122033; --ink:#E8EEF5; --muted:#9AAABD; --line:#24364D;
+  --navy:#8DB8FF; --teal:#35C8DB; --teal-ink:#5FD6E6; --pumpkin:#F29A55; --pumpkin-soft:#3A2414;
+  --up:#4CC98A; --up-soft:#173527; --down:#FF7A6B; --down-soft:#3D1D1A; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;padding-inline:16px;padding-block:20px 48px}
+.wrap{max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.wrap>*{min-width:0}
+.wrap .wrap{margin:0;max-width:none;width:100%}
+h1,h2,h3{font-family:var(--display);line-height:1.05;margin:0;text-wrap:balance;color:var(--navy);text-transform:uppercase}
+h1{font-size:clamp(2.6rem,7vw,4.2rem);font-weight:700}
+h2{font-size:1.9rem;font-weight:700;letter-spacing:.02em}
+h3{font-size:1.25rem;font-weight:600;letter-spacing:.04em}
+p{margin:0}
+.eyebrow{font-family:var(--display);font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--pumpkin);font-size:.95rem}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px}
+.muted{color:var(--muted)}
+.lead{max-width:65ch;font-size:1.08rem}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:16px}
+.grid2>*{min-width:0}
+button{font:inherit;cursor:pointer}
+.btn{font-family:var(--display);font-weight:700;font-size:1.15rem;text-transform:uppercase;letter-spacing:.06em;border:0;border-radius:8px;padding:12px 22px;background:var(--navy);color:var(--panel)}
+.btn.hot{background:var(--pumpkin);color:#1B0F06}
+.btn.alt{background:transparent;color:var(--navy);border:2px solid var(--navy)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+input[type=text],input[type=number]{font:inherit;padding:10px 12px;border:2px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}
+input[type=text]{width:100%;max-width:360px}
+input[type=number]{width:140px;font-family:var(--display);font-size:1.5rem;font-weight:700}
+label.field{display:flex;flex-direction:column;gap:6px;font-weight:700}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+td,th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+td:first-child,th:first-child{text-align:left}
+th{font-family:var(--display);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;font-size:.9rem}
+.tablewrap{overflow-x:auto}
+.ok{color:var(--up);font-weight:700} .no{color:var(--down);font-weight:700}
+.yes{color:var(--up)} .nope{color:var(--down);font-weight:700}
+.chartwrap{overflow-x:auto}
+svg text{font-family:var(--body)}
+.news{border-left:5px solid var(--pumpkin);background:var(--pumpkin-soft);border-radius:0 10px 10px 0;padding:14px 16px;display:grid;gap:6px}
+.calc{display:grid;gap:14px}
+.qrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}
+.fb{font-size:.92rem;border-radius:8px;padding:8px 10px}
+.fb.right{background:var(--up-soft)} .fb.wrong{background:var(--down-soft)}
+.big{font-family:var(--display);font-size:clamp(3rem,10vw,5rem);font-weight:700;line-height:1;font-variant-numeric:tabular-nums;color:var(--navy)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(170px,100%),1fr));gap:12px}
+.stat{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--panel)}
+.stat .k{font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.stat .v{font-family:var(--display);font-size:2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.3rem;font-weight:700;letter-spacing:.06em;padding:10px 14px;border:2px dashed var(--navy);border-radius:8px;background:var(--panel);user-select:all;overflow-wrap:anywhere}
+.confirm{border:2px solid var(--pumpkin);background:var(--pumpkin-soft);border-radius:10px;padding:16px;display:grid;gap:10px}
+.shot{font-family:var(--display);text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--teal-ink)}
+textarea{font:inherit;font-family:ui-monospace,Menlo,Consolas,monospace;width:100%;min-height:180px;padding:10px;border:2px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}
+</style>
+<style>body{margin:0}</style>
+</head>
+<body>
+<div class="wrap">
+
+<section id="intro" class="wrap" style="gap:18px">
+  <div class="eyebrow">BA 155 · Sim 4 · Chapter 7</div>
+  <h1>Forecast Challenge</h1>
+  <p class="lead">You manage <b>Campus Corner Café</b>. Pumpkin spice lattes have been flying off the counter for 8 weeks. Now you must tell the owner how many to plan for next week. Order too few and fans leave angry. Order too many and pumpkin sauce goes to waste. The closest forecast in the class wins bragging rights.</p>
+  <p class="lead">After that, you will audit last week's catering orders to see how well the café really served its customers.</p>
+  <div class="panel" style="display:grid;gap:14px">
+    <label class="field" for="studentName">Your full name, as it appears in Canvas
+      <input type="text" id="studentName" autocomplete="name" placeholder="First and last name">
+    </label>
+    <p class="muted" style="font-size:.92rem">You get one forecast. Once you lock it in, it cannot be changed.</p>
+    <div class="row"><button class="btn hot" id="startBtn">Start</button><span class="muted" id="nameNote"></span></div>
+  </div>
+</section>
+
+<section id="p1" class="wrap" style="gap:16px" hidden>
+  <div>
+    <div class="eyebrow">Part 1 of 3 · Run the numbers</div>
+    <h2>Pumpkin spice latte sales</h2>
+  </div>
+  <div class="panel" style="display:grid;gap:10px">
+    <h3>Cups sold each week</h3>
+    <div class="chartwrap"><svg id="chart" role="img" aria-label="Bar chart of weekly pumpkin spice latte sales, weeks 1 to 8"></svg></div>
+    <div class="tablewrap"><table id="salesTable"></table></div>
+  </div>
+  <div class="panel calc">
+    <h3>Forecast week 9 two ways</h3>
+    <div class="qrow">
+      <label for="smaIn"><b>3 week simple moving average.</b> Average weeks 6, 7, and 8. Round to one decimal.</label>
+      <input type="number" id="smaIn" step="0.1" inputmode="decimal">
+    </div>
+    <div class="fb" id="smaFb" hidden></div>
+    <div class="qrow">
+      <label for="wmaIn"><b>3 week weighted moving average.</b> Weights are 0.5 for week 8, 0.3 for week 7, and 0.2 for week 6. Round to one decimal.</label>
+      <input type="number" id="wmaIn" step="0.1" inputmode="decimal">
+    </div>
+    <div class="fb" id="wmaFb" hidden></div>
+    <div class="row"><button class="btn" id="checkCalc">Check my math</button></div>
+  </div>
+  <div class="row" id="toP2Row" hidden><button class="btn hot" id="toP2">Next, make your real forecast</button></div>
+</section>
+
+<section id="p2" class="wrap" style="gap:16px" hidden>
+  <div>
+    <div class="eyebrow">Part 2 of 3 · Your call</div>
+    <h2>Lock in your forecast</h2>
+    <p class="muted">Your moving averages only look backward. A good forecaster also looks ahead.</p>
+  </div>
+  <div class="news">
+    <span class="eyebrow" style="color:var(--pumpkin)">What you know about week 9</span>
+    <ul style="margin:0;padding-left:1.2em;display:grid;gap:4px">
+      <li>The weather service says a <b>cold snap</b> arrives on Monday, with highs in the low 60s all week. Hot drink sales usually jump when it gets cold.</li>
+      <li>The café is running <b>buy one, get one half off</b> on pumpkin spice lattes on Friday only.</li>
+      <li>Week 9 includes <b>Halloween</b>, and the student club is hosting a costume party next door.</li>
+      <li>Sales growth has been slowing a little each week.</li>
+    </ul>
+  </div>
+  <div class="panel" style="display:grid;gap:12px">
+    <div class="row" style="justify-content:space-between">
+      <span>Your simple moving average <b class="num" id="recSma"></b></span>
+      <span>Your weighted moving average <b class="num" id="recWma"></b></span>
+    </div>
+    <label class="field" for="finalIn">Your forecast for week 9, in cups
+      <input type="number" id="finalIn" min="0" max="2000" step="1" inputmode="numeric">
+    </label>
+    <label class="field" for="whyIn" style="font-weight:700">In one sentence, how did you decide?
+      <input type="text" id="whyIn" style="max-width:none" placeholder="For example, I started with the weighted average and added cups for the cold snap">
+    </label>
+    <div class="row" id="lockRow"><button class="btn hot" id="lockAsk" disabled>Lock in my forecast</button></div>
+    <div class="confirm" id="confirm" hidden>
+      <p><b>Ready?</b> You cannot change your forecast after this.</p>
+      <div class="row"><button class="btn hot" id="lockYes">Yes, lock it in</button><button class="btn alt" id="lockNo">Not yet</button></div>
+    </div>
+  </div>
+</section>
+
+<section id="p3" class="wrap" style="gap:16px" hidden>
+  <div>
+    <div class="eyebrow">Part 3 of 3 · Audit the orders</div>
+    <h2>How good was our service?</h2>
+    <p class="muted">While you wait for week 9, check last week's 20 catering orders. A dash means a problem. Find the four service measures and round to one decimal.</p>
+  </div>
+  <div class="panel"><div class="tablewrap"><table id="orders"></table></div></div>
+  <div class="panel calc">
+    <div class="qrow"><label for="ofIn"><b>Order fill rate (%).</b> Orders shipped complete ÷ total orders.</label><input type="number" id="ofIn" step="0.1" inputmode="decimal"></div>
+    <div class="qrow"><label for="ufIn"><b>Unit fill rate (%).</b> Units shipped ÷ units ordered.</label><input type="number" id="ufIn" step="0.1" inputmode="decimal"></div>
+    <div class="qrow"><label for="otIn"><b>On time rate (%).</b> Orders on time ÷ total orders.</label><input type="number" id="otIn" step="0.1" inputmode="decimal"></div>
+    <div class="qrow"><label for="poIn"><b>Perfect order rate (%).</b> Complete, on time, damage free, and correct paperwork, all at once ÷ total orders.</label><input type="number" id="poIn" step="0.1" inputmode="decimal"></div>
+    <div class="row"><button class="btn hot" id="finish" disabled>Check and see week 9</button></div>
+  </div>
+</section>
+
+<section id="res" class="wrap" style="gap:16px" hidden>
+  <div>
+    <div class="eyebrow">Results</div>
+    <h2 id="who"></h2>
+    <p class="muted" id="lockedNote"></p>
+  </div>
+  <div class="grid2">
+    <div class="panel" style="display:grid;gap:6px">
+      <span class="muted" style="text-transform:uppercase;letter-spacing:.05em;font-size:.85rem">Week 9 actual sales</span>
+      <div class="big" id="actual"></div>
+      <p id="missLine"></p>
+    </div>
+    <div class="panel" style="display:grid;gap:10px">
+      <span class="muted" style="text-transform:uppercase;letter-spacing:.05em;font-size:.85rem">Your result code</span>
+      <div class="code" id="code"></div>
+      <p class="muted" style="font-size:.92rem">Copy this code into your submission template and upload it to Canvas. The smallest miss in the class wins.</p>
+      <div class="row"><button class="btn alt" id="copyBtn">Copy code</button><span class="muted" id="copied"></span></div>
+    </div>
+  </div>
+  <div class="panel"><h3 style="margin-bottom:8px">How each forecast did</h3><div class="tablewrap"><table id="fcTable"></table></div></div>
+  <div class="panel"><h3 style="margin-bottom:8px">Your order audit</h3><div class="tablewrap"><table id="auditTable"></table></div></div>
+  <div class="panel" id="lessons" style="display:grid;gap:8px"></div>
+</section>
+
+<section id="verify" class="wrap" style="gap:16px" hidden>
+  <div><div class="eyebrow">Instructor tools</div><h2>Check codes and rank forecasts</h2>
+  <p class="muted">Paste one student per line as <b>Name, code</b>. Names must match what students typed.</p></div>
+  <label class="field" for="vin">Names and codes<textarea id="vin" spellcheck="false"></textarea></label>
+  <div class="row"><button class="btn hot" id="vbtn">Check and rank</button></div>
+  <div class="panel"><div class="tablewrap"><table id="vout"><tr><td class="muted">Your ranked list will show here.</td></tr></table></div></div>
+</section>
+
+</div>
+
+<script>
+(function(){
+  const LOCK='ba155-forecast-v1', SALT='PSL26';
+  const SALES=[140,165,190,210,235,250,270,285], ACTUAL=318;
+  const SMA=(250+270+285)/3, WMA=285*0.5+270*0.3+250*0.2;
+  const ORDERS=[[1001,40,40,1,1,1],[1002,25,25,1,1,1],[1003,60,54,1,1,1],[1004,30,30,0,1,1],[1005,45,45,1,1,1],[1006,20,20,1,0,1],[1007,50,50,1,1,1],[1008,35,35,1,1,0],[1009,80,72,0,1,1],[1010,15,15,1,1,1],[1011,40,40,1,1,1],[1012,55,55,1,1,1],[1013,30,24,1,1,1],[1014,25,25,0,1,1],[1015,70,70,1,1,1],[1016,45,45,1,1,1],[1017,20,20,1,1,1],[1018,35,35,1,0,1],[1019,60,60,1,1,1],[1020,50,50,1,1,1]];
+  const N=ORDERS.length;
+  const ANS={of:100*ORDERS.filter(o=>o[2]===o[1]).length/N, uf:100*ORDERS.reduce((a,o)=>a+o[2],0)/ORDERS.reduce((a,o)=>a+o[1],0), ot:100*ORDERS.filter(o=>o[3]).length/N, po:100*ORDERS.filter(o=>o[2]===o[1]&&o[3]&&o[4]&&o[5]).length/N};
+  const $=id=>document.getElementById(id);
+  const show=id=>{['intro','p1','p2','p3','res','verify'].forEach(s=>$(s).hidden=s!==id);window.scrollTo(0,0);};
+  const near=(a,b,t)=>Number.isFinite(a)&&Math.abs(a-b)<=t;
+  let name='', st={};
+
+  function checksum(s){let h=7;for(let i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))%1679616;}return h.toString(36).toUpperCase().padStart(4,'0');}
+  const norm=s=>s.toUpperCase().replace(/\s+/g,' ').trim();
+  function makeCode(nm,fc){const err=Math.abs(fc-ACTUAL);return 'PSL-'+fc+'-'+err+'-'+checksum(norm(nm)+'|'+fc+'|'+err+'|'+SALT);}
+  function readLock(){try{const v=localStorage.getItem(LOCK);return v?JSON.parse(v):null;}catch(e){return null;}}
+  function writeLock(o){try{localStorage.setItem(LOCK,JSON.stringify(o));}catch(e){}}
+
+  // Chart and table
+  function drawChart(){
+    const svg=$('chart'),W=820,H=280,m={l:44,r:16,t:16,b:36};
+    svg.setAttribute('viewBox','0 0 '+W+' '+H); svg.setAttribute('width',W); svg.setAttribute('height',H); svg.style.maxWidth='100%'; svg.style.height='auto';
+    const top=300, bw=(W-m.l-m.r)/SALES.length;
+    const y=v=>m.t+(H-m.t-m.b)*(1-v/top);
+    let g='';
+    for(let v=0;v<=top;v+=100){g+='<line x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="var(--line)"/><text x="'+(m.l-8)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="12" fill="var(--muted)">'+v+'</text>';}
+    SALES.forEach((v,i)=>{const x=m.l+i*bw+bw*0.18,w=bw*0.64;
+      g+='<rect x="'+x+'" y="'+y(v)+'" width="'+w+'" height="'+(y(0)-y(v))+'" rx="3" fill="var(--pumpkin)"/>';
+      g+='<text x="'+(x+w/2)+'" y="'+(y(v)-6)+'" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">'+v+'</text>';
+      g+='<text x="'+(x+w/2)+'" y="'+(H-m.b+18)+'" text-anchor="middle" font-size="12" fill="var(--muted)">Week '+(i+1)+'</text>';});
+    svg.innerHTML=g;
+    $('salesTable').innerHTML='<tr><th>Week</th>'+SALES.map((_,i)=>'<th>'+(i+1)+'</th>').join('')+'</tr><tr><td>Cups</td>'+SALES.map(v=>'<td>'+v+'</td>').join('')+'</tr>';
+  }
+
+  // Part 1
+  $('checkCalc').addEventListener('click',()=>{
+    const s=parseFloat($('smaIn').value), w=parseFloat($('wmaIn').value);
+    const sOk=near(s,SMA,0.15), wOk=near(w,WMA,0.15);
+    st.smaIn=s; st.wmaIn=w; st.smaOk=sOk; st.wmaOk=wOk;
+    const f1=$('smaFb'); f1.hidden=false; f1.className='fb '+(sOk?'right':'wrong');
+    f1.innerHTML=sOk?'<b class="ok">Correct.</b> (250 + 270 + 285) ÷ 3 = 268.3':'<b class="no">Not quite.</b> Add weeks 6, 7, and 8, then divide by 3. (250 + 270 + 285) ÷ 3 = 268.3';
+    const f2=$('wmaFb'); f2.hidden=false; f2.className='fb '+(wOk?'right':'wrong');
+    f2.innerHTML=wOk?'<b class="ok">Correct.</b> 285 × 0.5 + 270 × 0.3 + 250 × 0.2 = 273.5':'<b class="no">Not quite.</b> Multiply each week by its weight and add. 285 × 0.5 + 270 × 0.3 + 250 × 0.2 = 142.5 + 81 + 50 = 273.5';
+    $('smaIn').disabled=true;$('wmaIn').disabled=true;$('checkCalc').hidden=true;$('toP2Row').hidden=false;
+  });
+  $('toP2').addEventListener('click',()=>{$('recSma').textContent='268.3';$('recWma').textContent='273.5';show('p2');});
+
+  // Part 2
+  $('finalIn').addEventListener('input',()=>{const v=parseInt($('finalIn').value,10);$('lockAsk').disabled=!(Number.isFinite(v)&&v>0);});
+  $('lockAsk').addEventListener('click',()=>{$('confirm').hidden=false;$('lockRow').hidden=true;$('lockYes').focus();});
+  $('lockNo').addEventListener('click',()=>{$('confirm').hidden=true;$('lockRow').hidden=false;});
+  $('lockYes').addEventListener('click',()=>{
+    st.fc=parseInt($('finalIn').value,10); st.why=$('whyIn').value.trim();
+    writeLock({name,fc:st.fc,why:st.why,smaOk:st.smaOk,wmaOk:st.wmaOk,at:new Date().toISOString()});
+    renderOrders(); show('p3');
+  });
+
+  // Part 3
+  function renderOrders(){
+    const mark=v=>v?'<span class="yes">Yes</span>':'<span class="nope">–</span>';
+    $('orders').innerHTML='<tr><th>Order</th><th>Units ordered</th><th>Units shipped</th><th>On time</th><th>Damage free</th><th>Paperwork correct</th></tr>'+
+      ORDERS.map(o=>'<tr><td>#'+o[0]+'</td><td>'+o[1]+'</td><td>'+(o[2]<o[1]?'<span class="nope">'+o[2]+'</span>':o[2])+'</td><td>'+mark(o[3])+'</td><td>'+mark(o[4])+'</td><td>'+mark(o[5])+'</td></tr>').join('')+
+      '<tr><td><b>Total</b></td><td><b>'+ORDERS.reduce((a,o)=>a+o[1],0)+'</b></td><td><b>'+ORDERS.reduce((a,o)=>a+o[2],0)+'</b></td><td></td><td></td><td></td></tr>';
+  }
+  ['ofIn','ufIn','otIn','poIn'].forEach(id=>$(id).addEventListener('input',()=>{$('finish').disabled=!['ofIn','ufIn','otIn','poIn'].every(k=>$(k).value!=='');}));
+  $('finish').addEventListener('click',()=>{
+    st.audit={of:parseFloat($('ofIn').value),uf:parseFloat($('ufIn').value),ot:parseFloat($('otIn').value),po:parseFloat($('poIn').value)};
+    const L=readLock()||{}; L.audit=st.audit; writeLock(L);
+    renderResults();
+  });
+
+  function renderResults(note){
+    const fc=st.fc, err=Math.abs(fc-ACTUAL);
+    $('who').textContent=name+'’s forecast report';
+    $('lockedNote').textContent=note||'';
+    $('actual').textContent=ACTUAL+' cups';
+    $('missLine').innerHTML='You forecast <b>'+fc+'</b>. You were off by <b>'+err+' cups</b> ('+(100*err/ACTUAL).toFixed(1)+'%). '+(fc<ACTUAL?'You were short, so some fans left without a latte.':fc>ACTUAL?'You planned too many, so some pumpkin sauce went unused.':'A perfect forecast!');
+    $('code').textContent=makeCode(name,fc);
+    const row=(l,v)=>{const e=Math.abs(v-ACTUAL);return '<tr><td>'+l+'</td><td>'+(typeof v==='number'?v.toFixed(v%1?1:0):v)+'</td><td>'+e.toFixed(1)+'</td><td>'+(100*e/ACTUAL).toFixed(1)+'%</td></tr>';};
+    $('fcTable').innerHTML='<tr><th>Method</th><th>Forecast</th><th>Cups off</th><th>Percent off</th></tr>'+row('Simple moving average',SMA)+row('Weighted moving average',WMA)+'<tr class="you"><td><b>Your forecast</b></td><td><b>'+fc+'</b></td><td><b>'+err+'</b></td><td><b>'+(100*err/ACTUAL).toFixed(1)+'%</b></td></tr>'+
+      (st.why?'<tr><td colspan="4" style="white-space:normal;text-align:left" class="muted">Your reasoning. '+st.why.replace(/</g,'&lt;')+'</td></tr>':'');
+    if(st.audit){
+      const lab={of:'Order fill rate',uf:'Unit fill rate',ot:'On time rate',po:'Perfect order rate'};
+      let right=0;
+      $('auditTable').innerHTML='<tr><th>Measure</th><th>Your answer</th><th>Correct</th><th></th></tr>'+Object.keys(lab).map(k=>{const ok=near(st.audit[k],ANS[k],0.15);if(ok)right++;return '<tr><td>'+lab[k]+'</td><td>'+(Number.isFinite(st.audit[k])?st.audit[k].toFixed(1)+'%':'–')+'</td><td>'+ANS[k].toFixed(1)+'%</td><td class="'+(ok?'ok':'no')+'">'+(ok?'Correct':'Check')+'</td></tr>';}).join('')+
+        '<tr><td><b>Score</b></td><td colspan="3" style="text-align:left"><b>'+right+' of 4 correct</b></td></tr>';
+    } else $('auditTable').innerHTML='<tr><td class="muted">Order audit not finished.</td></tr>';
+    const tips=[
+      'Both moving averages only looked back, so both landed near 270 and missed by about 45 to 50 cups. They cannot see a cold snap, a promotion, or Halloween coming.',
+      'The weighted average did a little better because it leans on the most recent weeks, when sales were highest.',
+      'The best forecasters started with a moving average, then used judgment and cause and effect thinking to adjust. Real companies blend methods the same way.',
+      'In the order audit, unit fill rate was 97.6%, which sounds great. But only 60% of orders were perfect. The perfect order rate shows service from the customer’s side.'
+    ];
+    $('lessons').innerHTML='<h3>What happened</h3><ul style="margin:0;padding-left:1.2em;display:grid;gap:6px">'+tips.map(t=>'<li>'+t+'</li>').join('')+'</ul><p class="shot">Copy your result code into the Sim 4 submission template. No screenshot needed.</p>';
+    show('res');
+  }
+
+  $('copyBtn').addEventListener('click',()=>{
+    const t=$('code').textContent;
+    const sel=()=>{const r=document.createRange();r.selectNodeContents($('code'));const s=getSelection();s.removeAllRanges();s.addRange(r);$('copied').textContent='Press Ctrl+C or Command+C to copy.';};
+    try{navigator.clipboard.writeText(t).then(()=>{$('copied').textContent='Copied.';},sel);}catch(e){sel();}
+  });
+
+  $('startBtn').addEventListener('click',()=>{
+    name=$('studentName').value.trim();
+    if(name.split(/\s+/).length<2){$('nameNote').textContent='Please enter your first and last name.';$('studentName').focus();return;}
+    drawChart(); show('p1');
+  });
+
+  // Instructor verify
+  $('vbtn').addEventListener('click',()=>{
+    const rows=$('vin').value.split(/\n/).map(l=>l.trim()).filter(Boolean).map(l=>{
+      const i=l.lastIndexOf(','); if(i<0) return {name:l,ok:false};
+      const nm=l.slice(0,i).trim(), code=l.slice(i+1).trim().toUpperCase();
+      const m=code.match(/^PSL-(\d+)-(\d+)-([0-9A-Z]{4})$/);
+      if(!m) return {name:nm,ok:false};
+      const ok=checksum(norm(nm)+'|'+m[1]+'|'+m[2]+'|'+SALT)===m[3] && Math.abs(+m[1]-ACTUAL)===+m[2];
+      return {name:nm,ok,fc:+m[1],err:+m[2]};
+    });
+    rows.sort((a,b)=>(b.ok-a.ok)||((a.err??1e9)-(b.err??1e9)));
+    let r=0;
+    $('vout').innerHTML='<tr><th>Rank</th><th>Name</th><th>Forecast</th><th>Cups off</th><th>Code check</th></tr>'+rows.map(x=>{if(x.ok)r++;return '<tr><td>'+(x.ok?r:'')+'</td><td>'+x.name.replace(/</g,'&lt;')+'</td><td>'+(x.fc??'')+'</td><td>'+(x.err??'')+'</td><td class="'+(x.ok?'ok':'no')+'">'+(x.ok?'Valid':'Does not match')+'</td></tr>';}).join('');
+  });
+  if(location.hash==='#verify'){show('verify');return;}
+
+  // One forecast per browser
+  const saved=readLock();
+  if(saved&&saved.fc){
+    name=saved.name; st={fc:saved.fc,why:saved.why,audit:saved.audit};
+    if(saved.audit) renderResults('You already locked in your forecast on '+new Date(saved.at).toLocaleString()+'. This is your saved result.');
+    else {renderOrders(); show('p3');}
+  }
+})();
+</script>
+</body>
+</html>

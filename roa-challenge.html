@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The ROA Challenge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Layout: a board meeting packet. Briefing, then a project desk of 9 cards, then predictions, then the board's verdict with before and after statements. */
+:root{
+  --bg:#F2F5F8; --panel:#FFFFFF; --ink:#0F1B2D; --muted:#5A6B80; --line:#D5DEE8;
+  --navy:#002E66; --teal:#00ACC1; --teal-ink:#007C8C; --gold:#D9A21B; --gold-soft:#FFF4D9;
+  --up:#1E8E5A; --up-soft:#E3F5EC; --down:#C8382B; --down-soft:#FCE8E6;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1420; --panel:#122033; --ink:#E8EEF5; --muted:#9AAABD; --line:#24364D;
+  --navy:#8DB8FF; --teal:#35C8DB; --teal-ink:#5FD6E6; --gold:#F0BE48; --gold-soft:#3A2E12;
+  --up:#4CC98A; --up-soft:#173527; --down:#FF7A6B; --down-soft:#3D1D1A; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1420; --panel:#122033; --ink:#E8EEF5; --muted:#9AAABD; --line:#24364D;
+  --navy:#8DB8FF; --teal:#35C8DB; --teal-ink:#5FD6E6; --gold:#F0BE48; --gold-soft:#3A2E12;
+  --up:#4CC98A; --up-soft:#173527; --down:#FF7A6B; --down-soft:#3D1D1A; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;padding-inline:16px;padding-block:20px 48px}
+.wrap{max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--display);line-height:1.05;margin:0;text-wrap:balance;color:var(--navy);text-transform:uppercase}
+h1{font-size:clamp(2.6rem,7vw,4.2rem);font-weight:700;letter-spacing:.01em}
+h2{font-size:1.9rem;font-weight:700;letter-spacing:.02em}
+h3{font-size:1.25rem;font-weight:600;letter-spacing:.04em}
+p{margin:0}
+.eyebrow{font-family:var(--display);font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--teal-ink);font-size:.95rem}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px}
+.muted{color:var(--muted)}
+.lead{max-width:65ch;font-size:1.08rem}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:16px}
+.grid2>*,.wrap>*{min-width:0}
+.wrap .wrap{margin:0;max-width:none;width:100%}
+button{font:inherit;cursor:pointer}
+.btn{font-family:var(--display);font-weight:700;font-size:1.15rem;text-transform:uppercase;letter-spacing:.06em;border:0;border-radius:8px;padding:12px 22px;background:var(--navy);color:var(--panel)}
+.btn.gold{background:var(--gold);color:#1B1206}
+.btn.alt{background:transparent;color:var(--navy);border:2px solid var(--navy)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,.card:focus-visible,.pick:focus-visible,input:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+input[type=text]{font:inherit;padding:10px 12px;border:2px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);width:100%;max-width:360px}
+label.field{display:flex;flex-direction:column;gap:6px;font-weight:700}
+
+/* Statements */
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:right}
+td:not(:first-child),th:not(:first-child){white-space:nowrap}
+textarea{font:inherit;font-family:ui-monospace,Menlo,Consolas,monospace;width:100%;min-height:180px;padding:10px;border:2px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}
+td:first-child,th:first-child{text-align:left}
+th{font-family:var(--display);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;font-size:.9rem}
+tr.total td{font-weight:700;border-top:2px solid var(--ink);border-bottom:0}
+.tablewrap{overflow-x:auto}
+
+/* SPM ribbon */
+.spm{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:stretch}
+.metric{border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--bg);display:flex;flex-direction:column;gap:2px;min-width:0}
+.metric .k{font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.metric .v{font-family:var(--display);font-size:2.2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.05}
+.metric .d{font-size:.9rem;font-weight:700}
+.metric.roa{border:2px solid var(--navy)}
+.up{color:var(--up)} .down{color:var(--down)}
+.target{display:flex;flex-wrap:wrap;gap:10px}
+.goal{border:2px dashed var(--gold);border-radius:8px;padding:10px 14px;background:var(--gold-soft)}
+.goal b{font-family:var(--display);font-size:1.5rem;display:block;color:var(--ink)}
+
+/* Cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.card{text-align:left;background:var(--panel);border:2px solid var(--line);border-radius:10px;padding:14px;color:var(--ink);display:flex;flex-direction:column;gap:6px;position:relative;min-width:0}
+.card[aria-pressed="true"]{border-color:var(--gold);background:var(--gold-soft)}
+.card .tag{font-family:var(--display);font-weight:700;font-size:1rem;color:var(--teal-ink);letter-spacing:.08em}
+.card .cname{font-family:var(--display);font-weight:700;font-size:1.35rem;text-transform:uppercase;color:var(--navy);line-height:1.1}
+.card .cdesc{font-size:.93rem}
+.card .check{position:absolute;top:10px;right:12px;font-family:var(--display);font-weight:700;color:#1B1206;background:var(--gold);border-radius:999px;padding:0 9px;font-size:.85rem}
+.counter{font-family:var(--display);font-size:1.4rem;font-weight:700}
+.sticky{position:sticky;bottom:0;background:var(--bg);padding-block:12px;border-top:1px solid var(--line)}
+
+/* Predictions */
+.pred{display:grid;gap:12px}
+.prow{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.prow .pname{font-family:var(--display);font-weight:700;font-size:1.2rem;text-transform:uppercase;color:var(--navy)}
+.pq{display:flex;flex-direction:column;gap:4px}
+.pq span{font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.picks{display:flex;gap:6px}
+.pick{flex:1;border:2px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:8px 6px;font-weight:700}
+.pick[aria-pressed="true"].u{border-color:var(--up);background:var(--up-soft);color:var(--up)}
+.pick[aria-pressed="true"].dn{border-color:var(--down);background:var(--down-soft);color:var(--down)}
+.confirm{border:2px solid var(--gold);background:var(--gold-soft);border-radius:10px;padding:16px;display:grid;gap:10px}
+
+/* Results */
+.verdict{border-radius:12px;padding:20px;display:grid;gap:8px}
+.verdict.win{background:var(--up-soft);border:2px solid var(--up)}
+.verdict.lose{background:var(--down-soft);border:2px solid var(--down)}
+.score{font-family:var(--display);font-size:clamp(3rem,10vw,5rem);font-weight:700;line-height:1;color:var(--navy);font-variant-numeric:tabular-nums}
+.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.3rem;font-weight:700;letter-spacing:.06em;padding:10px 14px;border:2px dashed var(--navy);border-radius:8px;background:var(--panel);user-select:all;overflow-wrap:anywhere}
+.breakdown td:last-child{font-weight:700}
+.ok{color:var(--up);font-weight:700} .no{color:var(--down);font-weight:700}
+
+@media (max-width:640px){
+  .prow{grid-template-columns:1fr}
+  .spm{grid-template-columns:1fr}
+}
+</style>
+<style>body{margin:0}</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- BRIEFING -->
+<section id="brief" class="wrap" style="gap:18px">
+  <div class="eyebrow">BA 155 · Week 2 bonus · Chapter 3</div>
+  <h1>The ROA Challenge</h1>
+  <p class="lead">Congratulations, you are the new VP of Logistics at <b>Pearl Tea Co.</b>, a company that sells boba tea kits to stores across the U.S. The board is not happy. Return on assets is stuck at 20%, and they want <b>at least 26%</b> by next year. You have budget for exactly <b>three</b> logistics projects. Choose wisely. You only get one shot.</p>
+
+  <div class="target">
+    <div class="goal"><span class="muted">Board target</span><b>ROA of 26% or more</b></div>
+    <div class="goal"><span class="muted">And keep customers happy</span><b>Fill rate of 95% or more</b></div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h3 style="margin-bottom:8px">Income statement, last year</h3>
+      <table>
+        <tr><td>Sales</td><td>$2,000,000</td></tr>
+        <tr><td>Cost of goods sold</td><td>$1,200,000</td></tr>
+        <tr><td>Operating expenses</td><td>$600,000</td></tr>
+        <tr class="total"><td>Net profit</td><td>$200,000</td></tr>
+      </table>
+    </div>
+    <div class="panel">
+      <h3 style="margin-bottom:8px">Assets, end of year</h3>
+      <table>
+        <tr><td>Cash</td><td>$100,000</td></tr>
+        <tr><td>Accounts receivable</td><td>$200,000</td></tr>
+        <tr><td>Inventory</td><td>$300,000</td></tr>
+        <tr><td>Warehouse and equipment</td><td>$400,000</td></tr>
+        <tr class="total"><td>Total assets</td><td>$1,000,000</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="spm">
+    <div class="metric"><span class="k">Net profit margin</span><span class="v">10.0%</span><span class="muted" style="font-size:.85rem">Net profit ÷ Sales</span></div>
+    <div class="metric"><span class="k">Asset turnover</span><span class="v">2.00</span><span class="muted" style="font-size:.85rem">Sales ÷ Total assets</span></div>
+    <div class="metric roa"><span class="k">Return on assets</span><span class="v">20.0%</span><span class="muted" style="font-size:.85rem">Margin × Turnover</span></div>
+  </div>
+
+  <div class="panel" style="display:grid;gap:10px">
+    <h3>How you score</h3>
+    <ul style="margin:0;padding-left:1.2em;display:grid;gap:4px">
+      <li><b>ROA points.</b> Your final ROA × 10. An ROA of 24.5% earns 245 points.</li>
+      <li><b>Prediction points.</b> Before you see results, predict how each project would move margin and turnover on its own. 15 points for each correct call, up to 90.</li>
+      <li><b>Board bonus.</b> 50 points if you hit ROA of 26% or more with a fill rate of 95% or more.</li>
+      <li><b>Service penalty.</b> Minus 50 points if your fill rate falls below 95%. Every point below 95% also costs you 3% of sales, because stores buy elsewhere when you run out.</li>
+    </ul>
+    <p class="muted">Watch out. Some projects help each other, and some make each other worse.</p>
+  </div>
+
+  <div class="panel" style="display:grid;gap:14px">
+    <label class="field" for="studentName">Your full name, as it appears in Canvas
+      <input type="text" id="studentName" autocomplete="name" placeholder="First and last name">
+    </label>
+    <div class="row">
+      <button class="btn gold" id="toDesk">Go to the project desk</button>
+      <span class="muted" id="nameNote"></span>
+    </div>
+  </div>
+</section>
+
+<!-- DESK -->
+<section id="desk" class="wrap" style="gap:16px" hidden>
+  <div>
+    <div class="eyebrow">Step 1 of 3</div>
+    <h2>Pick exactly three projects</h2>
+    <p class="muted">Think about what each project does to sales, costs, and assets. Then think about what it does to customers.</p>
+  </div>
+  <div class="cards" id="cards"></div>
+  <div class="sticky row" style="justify-content:space-between">
+    <span class="counter"><span id="count">0</span> of 3 picked</span>
+    <div class="row">
+      <button class="btn alt" id="backBrief">Back to briefing</button>
+      <button class="btn gold" id="toPredict" disabled>Next, make predictions</button>
+    </div>
+  </div>
+</section>
+
+<!-- PREDICT -->
+<section id="predict" class="wrap" style="gap:16px" hidden>
+  <div>
+    <div class="eyebrow">Step 2 of 3</div>
+    <h2>Make your predictions</h2>
+    <p class="muted">For each project <b>on its own</b>, starting from last year's numbers, will net profit margin and asset turnover go up or down? Remember that lost sales from run outs count too.</p>
+  </div>
+  <div class="pred" id="pred"></div>
+  <div class="confirm" id="confirmBox" hidden>
+    <p><b>Ready to present to the board?</b> You cannot change your projects or predictions after this, and you only get one play.</p>
+    <div class="row">
+      <button class="btn gold" id="lockIn">Yes, lock it in</button>
+      <button class="btn alt" id="cancelLock">Not yet</button>
+    </div>
+  </div>
+  <div class="row" id="predActions">
+    <button class="btn alt" id="backDesk">Change projects</button>
+    <button class="btn gold" id="present" disabled>Present to the board</button>
+  </div>
+</section>
+
+<!-- RESULTS -->
+<section id="results" class="wrap" style="gap:16px" hidden>
+  <div>
+    <div class="eyebrow">Step 3 of 3 · The board's verdict</div>
+    <h2 id="who"></h2>
+  </div>
+
+  <div class="verdict" id="verdict"></div>
+
+  <div class="grid2">
+    <div class="panel" style="display:grid;gap:6px">
+      <span class="muted" style="text-transform:uppercase;letter-spacing:.05em;font-size:.85rem">Your score</span>
+      <div class="score" id="score">0</div>
+      <table class="breakdown" id="breakdown"></table>
+    </div>
+    <div class="panel" style="display:grid;gap:10px">
+      <span class="muted" style="text-transform:uppercase;letter-spacing:.05em;font-size:.85rem">Your result code</span>
+      <div class="code" id="code"></div>
+      <p class="muted" style="font-size:.92rem">Copy this code into your submission template and upload it to Canvas. Your instructor uses it to check your score and build the class leaderboard.</p>
+      <div class="row"><button class="btn alt" id="copyBtn">Copy code</button><span class="muted" id="copied"></span></div>
+    </div>
+  </div>
+
+  <div class="spm" id="spmAfter"></div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h3 style="margin-bottom:8px">Income statement</h3>
+      <div class="tablewrap"><table id="isTable"></table></div>
+    </div>
+    <div class="panel">
+      <h3 style="margin-bottom:8px">Assets</h3>
+      <div class="tablewrap"><table id="bsTable"></table></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3 style="margin-bottom:8px">Your predictions</h3>
+    <div class="tablewrap"><table id="predTable"></table></div>
+  </div>
+
+  <div class="panel" id="lessons" style="display:grid;gap:8px"></div>
+</section>
+
+<!-- INSTRUCTOR VERIFY (open with #verify) -->
+<section id="verify" class="wrap" style="gap:16px" hidden>
+  <div>
+    <div class="eyebrow">Instructor tools</div>
+    <h2>Check codes and build the leaderboard</h2>
+    <p class="muted">Paste one student per line as <b>Name, code</b>, for example <span style="font-family:ui-monospace,monospace">Maria Lopez, PTC-401-ADH-5RCQ</span>. The name must match what the student typed in the game.</p>
+  </div>
+  <label class="field" for="vin">Names and codes<textarea id="vin" spellcheck="false"></textarea></label>
+  <div class="row"><button class="btn gold" id="vbtn">Check and rank</button></div>
+  <div class="panel"><div class="tablewrap"><table id="vout"><tr><td class="muted">Your ranked list will show here.</td></tr></table></div></div>
+</section>
+
+</div>
+
+<script>
+(function(){
+  const LOCK_KEY='ba155-roa-challenge-v1';
+  const SALT='PTC26';
+  const BASE={S:2000000,cogsRate:0.60,exp:600000,inv:300000,ar:200000,cash:100000,fixed:400000,fill:97};
+  const CARDS=[
+    {id:'A',key:'ocean',name:'Ocean freight for imports',desc:'Bring tea and tapioca from Taiwan by ship instead of by air. The freight bill drops a lot, but shipments take 5 weeks instead of 5 days, so you must keep more stock on hand.',fx:{cogs:-55000,inv:100000,fill:-1}},
+    {id:'B',key:'cutss',name:'Cut safety stock 40%',desc:'Hold much less backup inventory in the warehouse. Less money tied up on shelves and lower storage costs. But run outs become more likely.',fx:{inv:-120000,exp:-24000,fill:-4}},
+    {id:'C',key:'fcast',name:'Demand forecasting software',desc:'Buy software that reads store sales data so you can see demand coming. Costs $60,000 up front and $25,000 a year. Better forecasts mean fewer run outs and a little less inventory.',fx:{fixed:60000,exp:25000,inv:-40000,fill:3}},
+    {id:'D',key:'tpl',name:'Hire a 3PL, sell the warehouse',desc:'Sell your $250,000 warehouse and use the money to pay off the loan. A third party logistics company stores and ships for you. Its yearly fee costs more than running your own building.',fx:{fixed:-250000,exp:35000,fill:1}},
+    {id:'E',key:'free2d',name:'Free 2 day shipping',desc:'Promise every retailer free 2 day delivery. Marketing expects sales to jump about 8%. You pay all the extra freight.',fx:{sales:0.08,exp:90000}},
+    {id:'F',key:'einv',name:'Invoice with every delivery',desc:'Send an accurate electronic invoice the moment each order is delivered. Stores pay you about 40% faster. A small yearly software fee.',fx:{ar:-80000,exp:10000}},
+    {id:'G',key:'texas',name:'Build a Texas warehouse',desc:'Build a $300,000 warehouse close to your Texas and Southeast customers. Faster delivery should lift sales about 6%. Running it costs $40,000 a year.',fx:{fixed:300000,exp:40000,sales:0.06}},
+    {id:'H',key:'pack',name:'Cheaper packaging supplier',desc:'A new supplier\'s shipping boxes cost $40,000 less a year. In testing, more kits arrived crushed, and a few stores complained.',fx:{cogs:-40000,sales:-0.04,fill:-2}},
+    {id:'I',key:'postp',name:'Postponement',desc:'Ship plain kits to the warehouse and add flavor labels only when an order comes in. You hold far fewer finished kits. A little extra labor at the warehouse.',fx:{inv:-70000,exp:15000}}
+  ];
+  const byKey=Object.fromEntries(CARDS.map(c=>[c.key,c]));
+
+  function run(keys){
+    const g=k=>keys.reduce((a,c)=>a+(byKey[c].fx[k]||0),0);
+    let fill=BASE.fill+g('fill');
+    if(keys.includes('fcast')&&keys.includes('cutss')) fill+=2;
+    if(keys.includes('ocean')&&keys.includes('cutss')) fill-=2;
+    const svc=1-0.03*Math.max(0,95-fill);
+    const S=BASE.S*(1+g('sales'))*svc, r=S/BASE.S;
+    const cogs=S*BASE.cogsRate+g('cogs');
+    const exp=BASE.exp+g('exp');
+    const NP=S-cogs-exp;
+    const inv=(BASE.inv+g('inv'))*r, ar=(BASE.ar+g('ar'))*r;
+    const fixed=BASE.fixed+g('fixed'), cash=BASE.cash;
+    const TA=inv+ar+cash+fixed;
+    return {S,cogs,exp,NP,inv,ar,cash,fixed,TA,npm:NP/S,at:S/TA,roa:NP/TA,fill};
+  }
+  const base=run([]);
+  // correct direction for each card on its own
+  const truth={};
+  CARDS.forEach(c=>{const r=run([c.key]);truth[c.key]={m:r.npm>base.npm?'up':'down',t:r.at>base.at?'up':'down'};});
+
+  const $=id=>document.getElementById(id);
+  const money=v=>(v<0?'−$':'$')+Math.round(Math.abs(v)).toLocaleString('en-US');
+  const pct=v=>(v*100).toFixed(1)+'%';
+  const show=id=>{['brief','desk','predict','results','verify'].forEach(s=>$(s).hidden=s!==id);window.scrollTo(0,0);};
+
+  let picked=[], preds={}, name='';
+
+  function readLock(){try{const v=localStorage.getItem(LOCK_KEY);return v?JSON.parse(v):null;}catch(e){return null;}}
+  function writeLock(o){try{localStorage.setItem(LOCK_KEY,JSON.stringify(o));}catch(e){}}
+
+  // Cards
+  const cardsEl=$('cards');
+  CARDS.forEach(c=>{
+    const b=document.createElement('button');
+    b.type='button';b.className='card';b.id='card-'+c.id;b.setAttribute('aria-pressed','false');
+    b.innerHTML='<span class="tag">Project '+c.id+'</span><span class="cname">'+c.name+'</span><span class="cdesc">'+c.desc+'</span>';
+    b.addEventListener('click',()=>{
+      const i=picked.indexOf(c.key);
+      if(i>=0) picked.splice(i,1); else if(picked.length<3) picked.push(c.key); else return;
+      renderCards();
+    });
+    cardsEl.appendChild(b);
+  });
+  function renderCards(){
+    CARDS.forEach(c=>{
+      const b=$('card-'+c.id), on=picked.includes(c.key);
+      b.setAttribute('aria-pressed',on?'true':'false');
+      const old=b.querySelector('.check'); if(old) old.remove();
+      if(on){const s=document.createElement('span');s.className='check';s.textContent='PICKED';b.appendChild(s);}
+    });
+    $('count').textContent=picked.length;
+    $('toPredict').disabled=picked.length!==3;
+  }
+
+  function renderPred(){
+    const el=$('pred'); el.innerHTML='';
+    picked.forEach(k=>{
+      const c=byKey[k]; preds[k]=preds[k]||{};
+      const row=document.createElement('div'); row.className='prow';
+      row.innerHTML='<div><span class="tag" style="font-family:var(--display);color:var(--teal-ink);font-weight:700;letter-spacing:.08em">Project '+c.id+'</span><div class="pname">'+c.name+'</div></div>'+
+        ['m','t'].map(q=>'<div class="pq"><span>'+(q==='m'?'Net profit margin':'Asset turnover')+'</span><div class="picks">'+
+          '<button type="button" class="pick u" id="p-'+k+'-'+q+'-up" aria-pressed="false">▲ Up</button>'+
+          '<button type="button" class="pick dn" id="p-'+k+'-'+q+'-down" aria-pressed="false">▼ Down</button></div></div>').join('');
+      el.appendChild(row);
+      ['m','t'].forEach(q=>['up','down'].forEach(d=>{
+        const btn=$('p-'+k+'-'+q+'-'+d);
+        btn.addEventListener('click',()=>{preds[k][q]=d;syncPred();});
+      }));
+    });
+    syncPred();
+  }
+  function syncPred(){
+    let done=0;
+    picked.forEach(k=>['m','t'].forEach(q=>{
+      ['up','down'].forEach(d=>$('p-'+k+'-'+q+'-'+d).setAttribute('aria-pressed',preds[k][q]===d?'true':'false'));
+      if(preds[k][q]) done++;
+    }));
+    $('present').disabled=done!==6;
+  }
+
+  function checksum(s){let h=7;for(let i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))%1679616;}return h.toString(36).toUpperCase().padStart(4,'0');}
+
+  function score(){
+    const r=run(picked);
+    const roaPts=Math.round(r.roa*1000);
+    let correct=0;
+    picked.forEach(k=>['m','t'].forEach(q=>{if(preds[k][q]===truth[k][q]) correct++;}));
+    const predPts=correct*15;
+    const met=r.roa>=0.26-1e-9 && r.fill>=95;
+    const bonus=met?50:0;
+    const penalty=r.fill<95?-50:0;
+    const total=roaPts+predPts+bonus+penalty;
+    const letters=picked.map(k=>byKey[k].id).sort().join('');
+    const code='PTC-'+total+'-'+letters+'-'+checksum(name.toUpperCase().replace(/\s+/g,' ').trim()+'|'+total+'|'+letters+'|'+SALT);
+    return {r,roaPts,correct,predPts,bonus,penalty,total,met,letters,code,name,picked:picked.slice(),preds:JSON.parse(JSON.stringify(preds))};
+  }
+
+  function delta(a,b,fmt,goodUp){
+    const d=a-b; if(Math.abs(d)<1e-9) return '<span class="muted">no change</span>';
+    const up=d>0, good=goodUp?up:!up;
+    return '<span class="'+(good?'up':'down')+'">'+(up?'▲ ':'▼ ')+fmt(Math.abs(d))+'</span>';
+  }
+
+  function renderResults(res){
+    const r=res.r;
+    $('who').textContent=res.name+'’s board report';
+    const v=$('verdict');
+    v.className='verdict '+(res.met?'win':'lose');
+    v.innerHTML = res.met
+      ? '<h3 class="up">The board approves!</h3><p>Your ROA is <b>'+pct(r.roa)+'</b> with a fill rate of <b>'+r.fill+'%</b>. You beat the 26% target and kept customers happy.</p>'
+      : '<h3 class="down">The board is not convinced</h3><p>Your ROA is <b>'+pct(r.roa)+'</b> with a fill rate of <b>'+r.fill+'%</b>. '+
+        (r.fill<95?'Run outs drove customers away. ':'')+(r.roa<0.26?'ROA fell short of the 26% target.':'')+'</p>';
+    $('score').textContent=res.total;
+    $('breakdown').innerHTML=
+      '<tr><td>ROA points ('+pct(r.roa)+' × 10)</td><td>'+res.roaPts+'</td></tr>'+
+      '<tr><td>Predictions ('+res.correct+' of 6 correct)</td><td>'+res.predPts+'</td></tr>'+
+      '<tr><td>Board bonus</td><td>'+res.bonus+'</td></tr>'+
+      '<tr><td>Service penalty</td><td>'+res.penalty+'</td></tr>';
+    $('code').textContent=res.code;
+
+    $('spmAfter').innerHTML=
+      '<div class="metric"><span class="k">Net profit margin</span><span class="v">'+pct(r.npm)+'</span><span class="d">'+delta(r.npm,base.npm,x=>(x*100).toFixed(1)+' pts',true)+'</span></div>'+
+      '<div class="metric"><span class="k">Asset turnover</span><span class="v">'+r.at.toFixed(2)+'</span><span class="d">'+delta(r.at,base.at,x=>x.toFixed(2),true)+'</span></div>'+
+      '<div class="metric roa"><span class="k">Return on assets</span><span class="v">'+pct(r.roa)+'</span><span class="d">'+delta(r.roa,base.roa,x=>(x*100).toFixed(1)+' pts',true)+'</span></div>';
+
+    const line=(l,a,b,goodUp,cls)=>'<tr'+(cls?' class="'+cls+'"':'')+'><td>'+l+'</td><td>'+money(b)+'</td><td>'+money(a)+'</td><td>'+delta(a,b,money,goodUp)+'</td></tr>';
+    const head='<tr><th></th><th>Before</th><th>After</th><th>Change</th></tr>';
+    $('isTable').innerHTML=head+
+      line('Sales',r.S,base.S,true)+line('Cost of goods sold',r.cogs,base.cogs,false)+line('Operating expenses',r.exp,base.exp,false)+line('Net profit',r.NP,base.NP,true,'total');
+    $('bsTable').innerHTML=head+
+      line('Cash',r.cash,base.cash,false)+line('Accounts receivable',r.ar,base.ar,false)+line('Inventory',r.inv,base.inv,false)+line('Warehouse and equipment',r.fixed,base.fixed,false)+line('Total assets',r.TA,base.TA,false,'total');
+
+    const arrow=d=>d==='up'?'▲ Up':'▼ Down';
+    $('predTable').innerHTML='<tr><th>Project</th><th>Margin, you said</th><th>Actual</th><th>Turnover, you said</th><th>Actual</th></tr>'+
+      res.picked.map(k=>{const c=byKey[k],t=truth[k],p=res.preds[k];
+        return '<tr><td>'+c.id+'. '+c.name+'</td><td class="'+(p.m===t.m?'ok':'no')+'">'+arrow(p.m)+'</td><td>'+arrow(t.m)+'</td><td class="'+(p.t===t.t?'ok':'no')+'">'+arrow(p.t)+'</td><td>'+arrow(t.t)+'</td></tr>';}).join('');
+
+    const tips=[];
+    if(res.picked.includes('ocean')&&res.picked.includes('cutss')) tips.push('You paired slow ocean freight with thin safety stock. Long lead times need more buffer, not less, so run outs jumped.');
+    if(res.picked.includes('fcast')&&res.picked.includes('cutss')) tips.push('Forecasting software made the safety stock cut safer. Better information lets you hold less inventory. That is the cure for the bullwhip effect you saw in the Beer Game.');
+    if(res.picked.includes('free2d')) tips.push('Free shipping grew sales, but the freight cost more than the extra gross profit. More sales does not always mean more profit.');
+    if(res.picked.includes('texas')) tips.push('The Texas warehouse added sales but also $300,000 of assets, which dragged turnover down.');
+    if(res.picked.includes('tpl')) tips.push('Selling the warehouse cut total assets by a quarter. Margin dipped from the 3PL fee, but turnover soared.');
+    if(res.picked.includes('pack')) tips.push('Cheaper boxes saved money, but crushed kits cost you sales and service. Watch the hidden costs of a low price.');
+    tips.push('Every project moves either the margin side or the turnover side of the strategic profit model, and often both. ROA is margin times turnover, so a small drop in one can be worth it for a big gain in the other.');
+    $('lessons').innerHTML='<h3>What the board noticed</h3><ul style="margin:0;padding-left:1.2em;display:grid;gap:6px">'+tips.map(t=>'<li>'+t+'</li>').join('')+'</ul><p class="shot" style="font-family:var(--display);text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--teal-ink)">Copy your result code into the submission template. No screenshot needed.</p>';
+    show('results');
+  }
+
+  // Flow
+  $('toDesk').addEventListener('click',()=>{
+    name=$('studentName').value.trim();
+    if(name.split(/\s+/).length<2){$('nameNote').textContent='Please enter your first and last name.';$('studentName').focus();return;}
+    $('nameNote').textContent='';
+    show('desk');
+  });
+  $('backBrief').addEventListener('click',()=>show('brief'));
+  $('toPredict').addEventListener('click',()=>{renderPred();show('predict');});
+  $('backDesk').addEventListener('click',()=>{$('confirmBox').hidden=true;$('predActions').hidden=false;show('desk');});
+  $('present').addEventListener('click',()=>{$('confirmBox').hidden=false;$('predActions').hidden=true;$('lockIn').focus();});
+  $('cancelLock').addEventListener('click',()=>{$('confirmBox').hidden=true;$('predActions').hidden=false;});
+  $('lockIn').addEventListener('click',()=>{
+    const res=score();
+    writeLock({name:res.name,picked:res.picked,preds:res.preds,code:res.code,at:new Date().toISOString()});
+    renderResults(res);
+  });
+  $('copyBtn').addEventListener('click',()=>{
+    const t=$('code').textContent;
+    const done=()=>{$('copied').textContent='Copied.';};
+    try{navigator.clipboard.writeText(t).then(done,()=>{selectCode();});}catch(e){selectCode();}
+  });
+  function selectCode(){const r=document.createRange();r.selectNodeContents($('code'));const s=getSelection();s.removeAllRanges();s.addRange(r);$('copied').textContent='Press Ctrl+C or Command+C to copy.';}
+
+
+  // Instructor verify view
+  function verifyRun(){
+    const lines=$('vin').value.split(/\n/).map(l=>l.trim()).filter(Boolean);
+    const rows=lines.map(l=>{
+      const i=l.lastIndexOf(','); if(i<0) return {name:l,code:'',ok:false,score:-1};
+      const nm=l.slice(0,i).trim(), code=l.slice(i+1).trim().toUpperCase();
+      const m=code.match(/^PTC-(-?\d+)-([A-I]{3})-([0-9A-Z]{4})$/);
+      if(!m) return {name:nm,code,ok:false,score:-1};
+      const ok=checksum(nm.toUpperCase().replace(/\s+/g,' ').trim()+'|'+m[1]+'|'+m[2]+'|'+SALT)===m[3];
+      return {name:nm,code,ok,score:+m[1],letters:m[2]};
+    });
+    rows.sort((a,b)=>(b.ok-a.ok)||(b.score-a.score));
+    let rank=0;
+    $('vout').innerHTML='<tr><th>Rank</th><th>Name</th><th>Score</th><th>Projects</th><th>ROA</th><th>Fill rate</th><th>Board approved</th><th>Code check</th></tr>'+rows.map(r=>{
+      if(r.ok) rank++;
+      let roaC='',fillC='',appC='';
+      if(r.ok){const keys=r.letters.split('').map(L=>CARDS.find(c=>c.id===L).key);const x=run(keys);const met=x.roa>=0.26-1e-9&&x.fill>=95;roaC=pct(x.roa);fillC=x.fill+'%';appC='<span class="'+(met?'ok':'no')+'">'+(met?'Yes':'No')+'</span>';}
+      return '<tr><td>'+(r.ok?rank:'')+'</td><td>'+r.name.replace(/</g,'&lt;')+'</td><td>'+(r.score>=0?r.score:'')+'</td><td>'+(r.letters||'')+'</td><td>'+roaC+'</td><td>'+fillC+'</td><td>'+appC+'</td><td class="'+(r.ok?'ok':'no')+'">'+(r.ok?'Valid':'Does not match')+'</td></tr>';
+    }).join('');
+  }
+  $('vbtn').addEventListener('click',verifyRun);
+  if(location.hash==='#verify'){ show('verify'); return; }
+
+  // One play per browser. A saved play reopens straight to its results.
+  const saved=readLock();
+  if(saved&&saved.picked&&saved.picked.length===3){
+    name=saved.name; picked=saved.picked; preds=saved.preds;
+    const res=score();
+    renderResults(res);
+    const note=document.createElement('p');
+    note.className='muted';
+    note.textContent='You already played on '+new Date(saved.at).toLocaleString()+'. This is your locked result.';
+    $('who').after(note);
+  }
+})();
+</script>
+</body>
+</html>

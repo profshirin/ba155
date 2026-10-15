@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pearl Stock</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Layout: a stockroom ledger. Top strip shows the week and running cost, the middle is the shelf and the order desk, the bottom is the weekly ledger. */
+:root{
+  --bg:#F2F5F8; --panel:#FFFFFF; --ink:#0F1B2D; --muted:#5A6B80; --line:#D5DEE8;
+  --navy:#002E66; --teal:#00ACC1; --teal-ink:#007C8C; --pearl:#3B2A20; --taro:#8A5CC2; --taro-soft:#F1EAFB;
+  --up:#1E8E5A; --up-soft:#E3F5EC; --down:#C8382B; --down-soft:#FCE8E6; --gold:#D9A21B; --gold-soft:#FFF4D9;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1420; --panel:#122033; --ink:#E8EEF5; --muted:#9AAABD; --line:#24364D;
+  --navy:#8DB8FF; --teal:#35C8DB; --teal-ink:#5FD6E6; --pearl:#E8D5C4; --taro:#B894E8; --taro-soft:#2A2040;
+  --up:#4CC98A; --up-soft:#173527; --down:#FF7A6B; --down-soft:#3D1D1A; --gold:#F0BE48; --gold-soft:#3A2E12; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1420; --panel:#122033; --ink:#E8EEF5; --muted:#9AAABD; --line:#24364D;
+  --navy:#8DB8FF; --teal:#35C8DB; --teal-ink:#5FD6E6; --pearl:#E8D5C4; --taro:#B894E8; --taro-soft:#2A2040;
+  --up:#4CC98A; --up-soft:#173527; --down:#FF7A6B; --down-soft:#3D1D1A; --gold:#F0BE48; --gold-soft:#3A2E12; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;padding-inline:16px;padding-block:20px 48px}
+.wrap{max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.wrap>*{min-width:0}
+.wrap .wrap{margin:0;max-width:none;width:100%}
+h1,h2,h3{font-family:var(--display);line-height:1.05;margin:0;text-wrap:balance;color:var(--navy);text-transform:uppercase}
+h1{font-size:clamp(2.6rem,7vw,4.2rem);font-weight:700}
+h2{font-size:1.9rem;font-weight:700;letter-spacing:.02em}
+h3{font-size:1.25rem;font-weight:600;letter-spacing:.04em}
+p{margin:0}
+.eyebrow{font-family:var(--display);font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--taro);font-size:.95rem}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px}
+.muted{color:var(--muted)}
+.lead{max-width:65ch;font-size:1.08rem}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:16px}
+.grid2>*{min-width:0}
+button{font:inherit;cursor:pointer}
+.btn{font-family:var(--display);font-weight:700;font-size:1.15rem;text-transform:uppercase;letter-spacing:.06em;border:0;border-radius:8px;padding:12px 22px;background:var(--navy);color:var(--panel)}
+.btn.taro{background:var(--taro);color:#fff}
+.btn.alt{background:transparent;color:var(--navy);border:2px solid var(--navy)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+input[type=text]{font:inherit;padding:10px 12px;border:2px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);width:100%;max-width:360px}
+label.field{display:flex;flex-direction:column;gap:6px;font-weight:700}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+td,th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+td:first-child,th:first-child{text-align:left}
+th{font-family:var(--display);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;font-size:.9rem}
+.tablewrap,.chartwrap{overflow-x:auto}
+.ok{color:var(--up);font-weight:700} .no{color:var(--down);font-weight:700}
+svg text{font-family:var(--body)}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr));gap:12px}
+.rule{border-top:4px solid var(--taro);background:var(--panel);border-radius:0 0 8px 8px;padding:14px;border:1px solid var(--line);border-top:4px solid var(--taro)}
+.rule b{display:block;font-family:var(--display);font-size:1.6rem;color:var(--navy)}
+.rule span{color:var(--muted);font-size:.95rem}
+.hint{background:var(--taro-soft);border-radius:10px;padding:14px 16px}
+.topbar{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:flex-end}
+.progress{height:8px;background:var(--line);border-radius:999px;overflow:hidden}
+.progress>i{display:block;height:100%;background:var(--taro);width:0;transition:width .3s}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(140px,100%),1fr));gap:10px}
+.stat{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--bg)}
+.stat .k{font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.stat .v{font-family:var(--display);font-size:2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat.bad{background:var(--down-soft);border-color:var(--down)} .stat.bad .v{color:var(--down)}
+.shelf{display:flex;flex-wrap:wrap;gap:3px;min-height:34px;align-content:flex-start}
+.shelf i{width:12px;height:12px;border-radius:50%;background:var(--pearl);display:block}
+.stepper{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.step{width:48px;height:48px;border-radius:8px;border:2px solid var(--line);background:var(--panel);color:var(--ink);font-size:1.5rem;font-weight:700}
+#qty{width:110px;text-align:center;font-family:var(--display);font-size:2rem;font-weight:700;padding:4px;border:2px solid var(--navy);border-radius:8px;background:var(--panel);color:var(--ink)}
+.quick{display:flex;gap:6px;flex-wrap:wrap}
+.quick button{border:2px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:6px 12px;font-weight:700}
+.report{border-radius:10px;padding:14px 16px;display:block}
+.report.good{background:var(--up-soft)} .report.bad{background:var(--down-soft)}
+.big{font-family:var(--display);font-size:clamp(3rem,10vw,5rem);font-weight:700;line-height:1;font-variant-numeric:tabular-nums;color:var(--navy)}
+.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.3rem;font-weight:700;letter-spacing:.06em;padding:10px 14px;border:2px dashed var(--navy);border-radius:8px;background:var(--panel);user-select:all;overflow-wrap:anywhere}
+tr.you td{background:var(--gold-soft);font-weight:700}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.9rem}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:18px;height:4px;border-radius:2px;display:inline-block}
+.shot{font-family:var(--display);text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--teal-ink)}
+textarea{font:inherit;font-family:ui-monospace,Menlo,Consolas,monospace;width:100%;min-height:180px;padding:10px;border:2px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<style>body{margin:0}</style>
+</head>
+<body>
+<div class="wrap">
+
+<section id="intro" class="wrap" style="gap:18px">
+  <div class="eyebrow">BA 155 · Sim 5 · Chapter 8</div>
+  <h1>Pearl Stock</h1>
+  <p class="lead">You run the stockroom at <b>Pearl Tea Café</b>. Every week you decide how many bags of tapioca pearls to order. Order too little and customers leave without their boba. Order too much and pearls sit on the shelf, costing money and going stale. Run the stockroom for 10 weeks at the lowest total cost.</p>
+  <div class="rules">
+    <div class="rule"><b>About 50 bags</b><span>Customers use about 50 bags a week, but it swings between about 35 and 65.</span></div>
+    <div class="rule"><b>$100 per order</b><span>Each delivery costs $100, no matter how many bags.</span></div>
+    <div class="rule"><b>$1 per bag</b><span>Each bag left on the shelf at the end of a week costs $1 to store, chill, and replace when it goes stale.</span></div>
+    <div class="rule"><b>$5 per bag short</b><span>Each bag you are short means lost drinks and unhappy customers.</span></div>
+    <div class="rule"><b>1 week</b><span>An order you place arrives at the start of next week. You start with 60 bags.</span></div>
+  </div>
+  <div class="hint">
+    <b>Hint from Chapter 8.</b> Find the EOQ first. Annual demand is about 50 × 52 = 2,600 bags. Each order costs $100. Holding one bag for a year costs $1 × 52 = $52. Then think about a reorder point with some safety stock.
+  </div>
+  <div class="panel" style="display:grid;gap:14px">
+    <label class="field" for="studentName">Your full name, as it appears in Canvas
+      <input type="text" id="studentName" autocomplete="name" placeholder="First and last name">
+    </label>
+    <p class="muted" style="font-size:.92rem">You get one 10 week run. The lowest total cost in the class wins.</p>
+    <div class="row"><button class="btn taro" id="startBtn">Open the stockroom</button><span class="muted" id="nameNote"></span></div>
+  </div>
+</section>
+
+<section id="game" class="wrap" style="gap:16px" hidden>
+  <div class="topbar">
+    <div><div class="eyebrow">Pearl Tea Café stockroom</div><h2 id="weekLbl">Week 1 <span class="muted" style="font-size:1.2rem">of 10</span></h2></div>
+    <div style="text-align:right"><div class="muted" style="font-size:.85rem;text-transform:uppercase;letter-spacing:.05em">Total cost so far</div><div class="big" style="font-size:2.2rem" id="runCost">$0</div></div>
+  </div>
+  <div class="progress" aria-hidden="true"><i id="prog"></i></div>
+
+  <div class="report" id="lastWeek" hidden></div>
+
+  <div class="grid2">
+    <div class="panel" style="display:grid;gap:12px">
+      <h3>Your shelf this morning</h3>
+      <div class="stats">
+        <div class="stat"><div class="k">Bags arrived</div><div class="v" id="sArr">0</div></div>
+        <div class="stat"><div class="k">Bags on hand</div><div class="v" id="sOn">60</div></div>
+        <div class="stat"><div class="k">Expected demand</div><div class="v">≈ 50</div></div>
+      </div>
+      <div class="shelf" id="shelf" aria-label="Bags on the shelf"></div>
+      <p class="muted" style="font-size:.9rem">Demand so far <span id="hist">none yet</span></p>
+    </div>
+    <div class="panel" style="display:grid;gap:12px">
+      <h3>Order for next week</h3>
+      <p class="muted" style="font-size:.95rem">This order arrives at the start of next week. It does not help you this week.</p>
+      <div class="stepper">
+        <button class="step" id="minus" aria-label="10 fewer bags">−</button>
+        <input id="qty" type="number" inputmode="numeric" min="0" max="500" value="0" aria-label="Bags to order">
+        <button class="step" id="plus" aria-label="10 more bags">+</button>
+      </div>
+      <div class="quick" id="quick"></div>
+      <button class="btn taro" id="goBtn">Place order and open the shop</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3 style="margin-bottom:8px">Weekly ledger</h3>
+    <div class="tablewrap"><table id="ledger"></table></div>
+  </div>
+</section>
+
+<section id="res" class="wrap" style="gap:16px" hidden>
+  <div><div class="eyebrow">Results</div><h2 id="who"></h2><p class="muted" id="lockedNote"></p></div>
+  <div class="grid2">
+    <div class="panel" style="display:grid;gap:6px">
+      <span class="muted" style="text-transform:uppercase;letter-spacing:.05em;font-size:.85rem">Your total cost</span>
+      <div class="big" id="total"></div>
+      <p id="verdict"></p>
+    </div>
+    <div class="panel" style="display:grid;gap:10px">
+      <span class="muted" style="text-transform:uppercase;letter-spacing:.05em;font-size:.85rem">Your result code</span>
+      <div class="code" id="code"></div>
+      <p class="muted" style="font-size:.92rem">Copy this code into your submission template and upload it to Canvas. The lowest cost in the class wins.</p>
+      <div class="row"><button class="btn alt" id="copyBtn">Copy code</button><span class="muted" id="copied"></span></div>
+    </div>
+  </div>
+  <div class="panel"><h3 style="margin-bottom:8px">How you compare</h3><div class="tablewrap"><table id="cmp"></table></div></div>
+  <div class="panel" style="display:grid;gap:10px">
+    <h3>Bags on the shelf at the end of each week</h3>
+    <div class="legend" id="legend"></div>
+    <div class="chartwrap"><svg id="chart" role="img" aria-label="Line chart of ending inventory each week, you versus the EOQ plan"></svg></div>
+  </div>
+  <div class="panel"><h3 style="margin-bottom:8px">Your ledger</h3><div class="tablewrap"><table id="ledger2"></table></div></div>
+  <div class="panel" id="lessons" style="display:grid;gap:8px"></div>
+</section>
+
+<section id="verify" class="wrap" style="gap:16px" hidden>
+  <div><div class="eyebrow">Instructor tools</div><h2>Check codes and rank players</h2>
+  <p class="muted">Paste one student per line as <b>Name, code</b>. Names must match what students typed.</p></div>
+  <label class="field" for="vin">Names and codes<textarea id="vin" spellcheck="false"></textarea></label>
+  <div class="row"><button class="btn taro" id="vbtn">Check and rank</button></div>
+  <div class="panel"><div class="tablewrap"><table id="vout"><tr><td class="muted">Your ranked list will show here.</td></tr></table></div></div>
+</section>
+
+</div>
+
+<script>
+(function(){
+  const LOCK='ba155-pearlstock-v1', SALT='INV26';
+  const D=[48,55,41,62,50,38,57,66,44,52], H=1, S=5, K=100, START=60, WEEKS=10;
+  const $=id=>document.getElementById(id);
+  const money=v=>'$'+Math.round(v).toLocaleString('en-US');
+  const show=id=>{['intro','game','res','verify'].forEach(s=>$(s).hidden=s!==id);window.scrollTo(0,0);};
+
+  function simulate(policy){
+    let inv=START, pipe=0; const rows=[];
+    for(let t=0;t<WEEKS;t++){
+      const arr=pipe; inv+=arr; pipe=0;
+      const q=policy(t,inv);
+      const oc=q>0?K:0; if(q>0) pipe=q;
+      const d=D[t], sold=Math.min(inv,d), short=d-sold; inv-=sold;
+      rows.push({w:t+1,arr,start:inv+sold,q,d,sold,short,end:inv,oc,hc:inv*H,sc:short*S,cost:oc+inv*H+short*S});
+    }
+    return {rows,total:rows.reduce((a,r)=>a+r.cost,0),o:rows.reduce((a,r)=>a+r.oc,0),h:rows.reduce((a,r)=>a+r.hc,0),s:rows.reduce((a,r)=>a+r.sc,0),lost:rows.reduce((a,r)=>a+r.short,0)};
+  }
+  const EOQPLAN=simulate((t,inv)=>inv<75?100:0);
+  const WEEKLY=simulate(()=>50);
+  const BEST=729;
+
+  function checksum(s){let h=7;for(let i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))%1679616;}return h.toString(36).toUpperCase().padStart(4,'0');}
+  const norm=s=>s.toUpperCase().replace(/\s+/g,' ').trim();
+  const makeCode=(nm,c)=>'INV-'+c+'-'+checksum(norm(nm)+'|'+c+'|'+SALT);
+  function readLock(){try{const v=localStorage.getItem(LOCK);return v?JSON.parse(v):null;}catch(e){return null;}}
+  function writeLock(o){try{localStorage.setItem(LOCK,JSON.stringify(o));}catch(e){}}
+
+  let name='', orders=[], state=null;
+  function startState(){return {t:0,inv:START,pipe:0,rows:[],arr:0};}
+
+  [0,50,75,100,125,150].forEach(v=>{const b=document.createElement('button');b.type='button';b.textContent=v===0?'None':v;b.addEventListener('click',()=>{$('qty').value=v;});$('quick').appendChild(b);});
+  $('minus').addEventListener('click',()=>{$('qty').value=Math.max(0,(parseInt($('qty').value,10)||0)-10);});
+  $('plus').addEventListener('click',()=>{$('qty').value=Math.min(500,(parseInt($('qty').value,10)||0)+10);});
+
+  function ledgerHTML(rows){
+    return '<tr><th>Week</th><th>Arrived</th><th>Start</th><th>Ordered</th><th>Demand</th><th>Short</th><th>End</th><th>Order cost</th><th>Holding</th><th>Stockout</th><th>Week cost</th></tr>'+
+      rows.map(r=>'<tr><td>'+r.w+'</td><td>'+r.arr+'</td><td>'+r.start+'</td><td>'+r.q+'</td><td>'+r.d+'</td><td class="'+(r.short?'no':'')+'">'+r.short+'</td><td>'+r.end+'</td><td>'+money(r.oc)+'</td><td>'+money(r.hc)+'</td><td>'+money(r.sc)+'</td><td><b>'+money(r.cost)+'</b></td></tr>').join('');
+  }
+  function renderWeek(){
+    const s=state;
+    $('weekLbl').innerHTML='Week '+(s.t+1)+' <span class="muted" style="font-size:1.2rem">of 10</span>';
+    $('prog').style.width=(s.t/WEEKS*100)+'%';
+    $('runCost').textContent=money(s.rows.reduce((a,r)=>a+r.cost,0));
+    $('sArr').textContent=s.arr; $('sOn').textContent=s.inv;
+    const sh=$('shelf'); sh.innerHTML=''; for(let i=0;i<Math.min(s.inv,200);i++){sh.appendChild(document.createElement('i'));}
+    $('hist').textContent=s.rows.length?s.rows.map(r=>r.d).join(', '):'none yet';
+    $('ledger').innerHTML=s.rows.length?ledgerHTML(s.rows):'<tr><td class="muted">Your weekly results will show here.</td></tr>';
+    $('qty').value=0;
+  }
+  function beginWeek(){ const s=state; s.arr=s.pipe; s.inv+=s.pipe; s.pipe=0; renderWeek(); }
+  $('goBtn').addEventListener('click',()=>{
+    const s=state; let q=parseInt($('qty').value,10); if(!Number.isFinite(q)||q<0) q=0; q=Math.min(q,500);
+    const oc=q>0?K:0; if(q>0) s.pipe=q;
+    const d=D[s.t], sold=Math.min(s.inv,d), short=d-sold, start=s.inv; s.inv-=sold;
+    const r={w:s.t+1,arr:s.arr,start,q,d,sold,short,end:s.inv,oc,hc:s.inv*H,sc:short*S}; r.cost=r.oc+r.hc+r.sc; s.rows.push(r);
+    orders.push(q);
+    writeLock({name,orders,at:new Date().toISOString()});
+    const lw=$('lastWeek'); lw.hidden=false; lw.className='report '+(short?'bad':'good');
+    lw.innerHTML='<b>Week '+r.w+' report.</b> Customers wanted <b>'+d+'</b> bags. '+(short?'You ran out and were <b>'+short+' bags short</b>. ':'You covered every drink. ')+'You ended with <b>'+r.end+'</b> bags. This week cost '+money(r.cost)+'.';
+    s.t++;
+    if(s.t>=WEEKS){ finish(); return; }
+    beginWeek();
+  });
+
+  function finish(note){
+    const total=state.rows.reduce((a,r)=>a+r.cost,0);
+    writeLock({name,orders,at:new Date().toISOString()});
+    $('who').textContent=name+'’s stockroom report';
+    $('lockedNote').textContent=note||'';
+    $('total').textContent=money(total);
+    const diff=total-EOQPLAN.total;
+    $('verdict').innerHTML=diff<0?'You beat the EOQ plan by <b>'+money(-diff)+'</b>. Excellent stockroom work!':diff===0?'You matched the EOQ plan exactly.':'The EOQ plan beat you by <b>'+money(diff)+'</b>.';
+    $('code').textContent=makeCode(name,total);
+    const sum=x=>({o:x.rows.reduce((a,r)=>a+r.oc,0),h:x.rows.reduce((a,r)=>a+r.hc,0),s:x.rows.reduce((a,r)=>a+r.sc,0),n:x.rows.filter(r=>r.q>0).length,lost:x.rows.reduce((a,r)=>a+r.short,0)});
+    const me=sum(state), eo=sum(EOQPLAN), wk=sum(WEEKLY);
+    const row=(l,x,t,cls)=>'<tr'+(cls?' class="'+cls+'"':'')+'><td>'+l+'</td><td>'+x.n+'</td><td>'+money(x.o)+'</td><td>'+money(x.h)+'</td><td>'+x.lost+'</td><td>'+money(x.s)+'</td><td><b>'+money(t)+'</b></td></tr>';
+    $('cmp').innerHTML='<tr><th>Plan</th><th>Orders</th><th>Ordering</th><th>Holding</th><th>Bags short</th><th>Stockout</th><th>Total</th></tr>'+
+      row('You',me,total,'you')+row('EOQ plan, order 100 when stock is below 75',eo,EOQPLAN.total)+row('Order 50 every week',wk,WEEKLY.total)+
+      '<tr><td>Best possible, knowing demand in advance</td><td colspan="5"></td><td><b>'+money(BEST)+'</b></td></tr>';
+    $('ledger2').innerHTML=ledgerHTML(state.rows);
+    drawChart();
+    const tips=[];
+    if(me.n>=8) tips.push('You ordered almost every week, so ordering costs added up fast. At $100 a delivery, bigger and less frequent orders usually win.');
+    if(me.lost>20) tips.push('You ran short by '+me.lost+' bags. Stockouts cost $5 a bag, so a little more safety stock would have paid for itself.');
+    if(me.h>EOQPLAN.h+80) tips.push('Your shelves were often too full. Holding costs grew because bags sat around for weeks.');
+    tips.push('The EOQ is the square root of (2 × 2,600 × $100) ÷ $52, which is 100 bags, about two weeks of demand. The reorder point of 75 is one week of demand plus 25 bags of safety stock.');
+    tips.push('The EOQ plan balances the three costs. Ordering less often cuts ordering cost, safety stock cuts stockouts, and not overbuying keeps holding cost low.');
+    $('lessons').innerHTML='<h3>What the numbers say</h3><ul style="margin:0;padding-left:1.2em;display:grid;gap:6px">'+tips.map(x=>'<li>'+x+'</li>').join('')+'</ul><p class="shot">Copy your result code into the Sim 5 submission template. No screenshot needed.</p>';
+    show('res');
+  }
+
+  function drawChart(){
+    const svg=$('chart'),W=820,H=280,m={l:44,r:16,t:16,b:36};
+    svg.setAttribute('viewBox','0 0 '+W+' '+H);svg.setAttribute('width',W);svg.setAttribute('height',H);svg.style.maxWidth='100%';svg.style.height='auto';
+    const series=[{n:'You',c:'var(--taro)',d:state.rows.map(r=>r.end),w:4},{n:'EOQ plan',c:'var(--teal)',d:EOQPLAN.rows.map(r=>r.end),w:2.5,dash:'6 5'}];
+    const maxV=Math.max(80,...series.flatMap(s=>s.d)), step=maxV<=100?20:50, top=Math.ceil(maxV/step)*step;
+    const x=i=>m.l+i*(W-m.l-m.r)/(WEEKS-1), y=v=>m.t+(H-m.t-m.b)*(1-v/top);
+    let g='';
+    for(let v=0;v<=top;v+=step) g+='<line x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="var(--line)"/><text x="'+(m.l-8)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="12" fill="var(--muted)">'+v+'</text>';
+    for(let i=0;i<WEEKS;i++) g+='<text x="'+x(i)+'" y="'+(H-m.b+18)+'" text-anchor="middle" font-size="12" fill="var(--muted)">'+(i+1)+'</text>';
+    series.forEach(s=>{g+='<polyline fill="none" stroke="'+s.c+'" stroke-width="'+s.w+'" stroke-linejoin="round"'+(s.dash?' stroke-dasharray="'+s.dash+'"':'')+' points="'+s.d.map((v,i)=>x(i)+','+y(v)).join(' ')+'"/>';s.d.forEach((v,i)=>{g+='<circle cx="'+x(i)+'" cy="'+y(v)+'" r="3" fill="'+s.c+'"/>';});});
+    svg.innerHTML=g;
+    $('legend').innerHTML=series.map(s=>'<span><i style="background:'+s.c+'"></i>'+s.n+'</span>').join('');
+  }
+
+  $('copyBtn').addEventListener('click',()=>{
+    const t=$('code').textContent;
+    const sel=()=>{const r=document.createRange();r.selectNodeContents($('code'));const s=getSelection();s.removeAllRanges();s.addRange(r);$('copied').textContent='Press Ctrl+C or Command+C to copy.';};
+    try{navigator.clipboard.writeText(t).then(()=>{$('copied').textContent='Copied.';},sel);}catch(e){sel();}
+  });
+
+  $('startBtn').addEventListener('click',()=>{
+    name=$('studentName').value.trim();
+    if(name.split(/\s+/).length<2){$('nameNote').textContent='Please enter your first and last name.';$('studentName').focus();return;}
+    state=startState(); orders=[]; beginWeek(); show('game');
+  });
+
+  $('vbtn').addEventListener('click',()=>{
+    const rows=$('vin').value.split(/\n/).map(l=>l.trim()).filter(Boolean).map(l=>{
+      const i=l.lastIndexOf(','); if(i<0) return {name:l,ok:false};
+      const nm=l.slice(0,i).trim(), code=l.slice(i+1).trim().toUpperCase();
+      const m=code.match(/^INV-(\d+)-([0-9A-Z]{4})$/); if(!m) return {name:nm,ok:false};
+      return {name:nm,ok:checksum(norm(nm)+'|'+m[1]+'|'+SALT)===m[2],cost:+m[1]};
+    });
+    rows.sort((a,b)=>(b.ok-a.ok)||((a.cost??1e9)-(b.cost??1e9)));
+    let r=0;
+    $('vout').innerHTML='<tr><th>Rank</th><th>Name</th><th>Total cost</th><th>Vs. EOQ plan</th><th>Code check</th></tr>'+rows.map(x=>{if(x.ok)r++;const d=x.ok?x.cost-EOQPLAN.total:null;return '<tr><td>'+(x.ok?r:'')+'</td><td>'+x.name.replace(/</g,'&lt;')+'</td><td>'+(x.cost!=null?money(x.cost):'')+'</td><td>'+(d==null?'':(d<0?'<span class="ok">Beat it by '+money(-d)+'</span>':d===0?'Matched it':'Over by '+money(d)))+'</td><td class="'+(x.ok?'ok':'no')+'">'+(x.ok?'Valid':'Does not match')+'</td></tr>';}).join('');
+  });
+  if(location.hash==='#verify'){show('verify');return;}
+
+  const saved=readLock();
+  if(saved&&saved.orders&&saved.orders.length>0&&saved.orders.length<WEEKS){
+    name=saved.name; orders=saved.orders.slice(); state=startState();
+    for(let t=0;t<orders.length;t++){
+      const s=state; s.arr=s.pipe; s.inv+=s.pipe; s.pipe=0; const q=orders[t];
+      const oc=q>0?K:0; if(q>0) s.pipe=q;
+      const d=D[t], sold=Math.min(s.inv,d), short=d-sold, start=s.inv; s.inv-=sold;
+      const r={w:t+1,arr:s.arr,start,q,d,sold,short,end:s.inv,oc,hc:s.inv*H,sc:short*S}; r.cost=r.oc+r.hc+r.sc; s.rows.push(r); s.t=t+1;
+    }
+    beginWeek(); show('game');
+    const lw=$('lastWeek'); lw.hidden=false; lw.className='report good'; lw.innerHTML='Welcome back. Your game was saved, so you are picking up where you left off.';
+  }
+  else if(saved&&saved.orders&&saved.orders.length===WEEKS){
+    name=saved.name; orders=saved.orders;
+    const sim=simulate(t=>orders[t]); state={rows:sim.rows};
+    finish('You already played on '+new Date(saved.at).toLocaleString()+'. This is your saved result.');
+  }
+})();
+</script>
+</body>
+</html>

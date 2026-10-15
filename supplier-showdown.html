@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Supplier Showdown</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Layout: a buyer's desk. Part 1 is a sorting tray of purchase cards, Part 2 is a supplier scorecard, then a supply shock. */
+:root{
+  --bg:#F2F5F8; --panel:#FFFFFF; --ink:#0F1B2D; --muted:#5A6B80; --line:#D5DEE8;
+  --navy:#002E66; --teal:#00ACC1; --teal-ink:#007C8C; --gold:#D9A21B; --gold-soft:#FFF4D9;
+  --up:#1E8E5A; --up-soft:#E3F5EC; --down:#C8382B; --down-soft:#FCE8E6;
+  --q-lev:#E3F5F8; --q-str:#002E66; --q-non:#F6F8FB; --q-bot:#C7EEF3; --q-str-ink:#FFFFFF;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1420; --panel:#122033; --ink:#E8EEF5; --muted:#9AAABD; --line:#24364D;
+  --navy:#8DB8FF; --teal:#35C8DB; --teal-ink:#5FD6E6; --gold:#F0BE48; --gold-soft:#3A2E12;
+  --up:#4CC98A; --up-soft:#173527; --down:#FF7A6B; --down-soft:#3D1D1A;
+  --q-lev:#14303A; --q-str:#8DB8FF; --q-non:#16253A; --q-bot:#1B3F48; --q-str-ink:#0B1420; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1420; --panel:#122033; --ink:#E8EEF5; --muted:#9AAABD; --line:#24364D;
+  --navy:#8DB8FF; --teal:#35C8DB; --teal-ink:#5FD6E6; --gold:#F0BE48; --gold-soft:#3A2E12;
+  --up:#4CC98A; --up-soft:#173527; --down:#FF7A6B; --down-soft:#3D1D1A;
+  --q-lev:#14303A; --q-str:#8DB8FF; --q-non:#16253A; --q-bot:#1B3F48; --q-str-ink:#0B1420; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;padding-inline:16px;padding-block:20px 48px}
+.wrap{max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.wrap>*{min-width:0}
+.wrap .wrap{margin:0;max-width:none;width:100%}
+h1,h2,h3{font-family:var(--display);line-height:1.05;margin:0;text-wrap:balance;color:var(--navy);text-transform:uppercase}
+h1{font-size:clamp(2.6rem,7vw,4.2rem);font-weight:700}
+h2{font-size:1.9rem;font-weight:700;letter-spacing:.02em}
+h3{font-size:1.25rem;font-weight:600;letter-spacing:.04em}
+p{margin:0}
+.eyebrow{font-family:var(--display);font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--teal-ink);font-size:.95rem}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px}
+.muted{color:var(--muted)}
+.lead{max-width:65ch;font-size:1.08rem}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+button{font:inherit;cursor:pointer}
+.btn{font-family:var(--display);font-weight:700;font-size:1.15rem;text-transform:uppercase;letter-spacing:.06em;border:0;border-radius:8px;padding:12px 22px;background:var(--navy);color:var(--panel)}
+.btn.gold{background:var(--gold);color:#1B1206}
+.btn.alt{background:transparent;color:var(--navy);border:2px solid var(--navy)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+input[type=text]{font:inherit;padding:10px 12px;border:2px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);width:100%;max-width:360px}
+label.field{display:flex;flex-direction:column;gap:6px;font-weight:700}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+td,th{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-family:var(--display);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;font-size:.9rem}
+.tablewrap{overflow-x:auto}
+.ok{color:var(--up);font-weight:700} .no{color:var(--down);font-weight:700}
+
+/* Matrix legend */
+.mini{display:grid;grid-template-columns:auto 1fr 1fr;grid-template-rows:1fr 1fr auto;gap:4px;max-width:520px}
+.mini .q{padding:10px;border-radius:6px;font-size:.9rem;min-height:84px}
+.mini .q b{font-family:var(--display);font-size:1.2rem;text-transform:uppercase;display:block}
+.q-lev{background:var(--q-lev)} .q-str{background:var(--q-str);color:var(--q-str-ink)} .q-str b{color:var(--q-str-ink)}
+.q-non{background:var(--q-non);border:1px solid var(--line)} .q-bot{background:var(--q-bot)}
+.axis{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.axis.y{writing-mode:vertical-rl;transform:rotate(180deg);text-align:center}
+.axis.x{grid-column:2 / 4;text-align:center}
+
+/* Items */
+.items{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:12px}
+.item{background:var(--panel);border:2px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.item.done{border-color:var(--teal)}
+.item .iname{font-family:var(--display);font-weight:700;font-size:1.3rem;text-transform:uppercase;color:var(--navy);line-height:1.1}
+.item .spend{font-family:var(--display);font-weight:600;font-size:1.1rem}
+.item .note{font-size:.92rem}
+.qbtns{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.qb{border:2px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:7px 4px;font-weight:700;font-size:.9rem}
+.qb[aria-pressed="true"]{border-color:var(--navy);background:var(--navy);color:var(--panel)}
+.fb{font-size:.9rem;border-radius:8px;padding:8px 10px}
+.fb.right{background:var(--up-soft)} .fb.wrong{background:var(--down-soft)}
+
+/* Suppliers */
+.sups{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:12px}
+.sup{background:var(--panel);border:2px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.sup.win{border-color:var(--gold);background:var(--gold-soft)}
+.sup .sname{font-family:var(--display);font-weight:700;font-size:1.45rem;text-transform:uppercase;color:var(--navy)}
+.sup dl{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:0;font-size:.92rem}
+.sup dt{color:var(--muted)} .sup dd{margin:0;font-weight:700}
+.big{font-family:var(--display);font-size:2.4rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.weights{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));gap:14px}
+.wt{display:flex;flex-direction:column;gap:4px}
+.wt label{font-weight:700}
+.wt .val{font-family:var(--display);font-size:1.8rem;font-weight:700}
+input[type=range]{width:100%;accent-color:var(--teal)}
+.sum{font-family:var(--display);font-size:1.3rem;font-weight:700}
+.choice{display:grid;gap:10px}
+.opt{text-align:left;border:2px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:12px 14px}
+.opt[aria-pressed="true"]{border-color:var(--gold);background:var(--gold-soft)}
+.opt b{font-family:var(--display);font-size:1.2rem;text-transform:uppercase;color:var(--navy)}
+.shock{border:2px solid var(--down);background:var(--down-soft);border-radius:12px;padding:18px;display:grid;gap:8px}
+.good{border-color:var(--up);background:var(--up-soft)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(170px,100%),1fr));gap:12px}
+.stat{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--panel)}
+.stat .k{font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.stat .v{font-family:var(--display);font-size:2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.shot{font-family:var(--display);text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--teal-ink)}
+</style>
+<style>body{margin:0}</style>
+</head>
+<body>
+<div class="wrap">
+
+<section id="intro" class="wrap" style="gap:18px">
+  <div class="eyebrow">BA 155 · Sim 3 · Chapter 6</div>
+  <h1>Supplier Showdown</h1>
+  <p class="lead">You just became the buyer for <b>Pearl Tea Café</b>, a busy boba shop in Cerritos. Last spring the shop ran out of tapioca pearls for two weeks and lost a lot of sales. The owner wants a smarter buying plan. First, sort what the shop buys. Then pick the right tapioca supplier, and get ready for a surprise.</p>
+  <div class="panel" style="display:grid;gap:12px">
+    <h3>Kraljic's matrix, a quick refresher</h3>
+    <div class="mini" aria-label="Kraljic matrix">
+      <div class="axis y">Money at stake ↑</div>
+      <div class="q q-lev"><b>Leverage</b>Big spend, easy to buy. Shop around and negotiate.</div>
+      <div class="q q-str"><b>Strategic</b>Big spend, hard to buy. Build a close partnership.</div>
+      <div class="axis y">&nbsp;</div>
+      <div class="q q-non"><b>Noncritical</b>Small spend, easy to buy. Keep it simple.</div>
+      <div class="q q-bot"><b>Bottleneck</b>Small spend, hard to buy. Secure supply and keep backups.</div>
+      <div></div><div class="axis x">Supply risk →</div>
+    </div>
+    <p class="muted" style="font-size:.92rem">For this shop, treat yearly spend of <b>$40,000 or more</b> as high financial importance.</p>
+  </div>
+  <div class="panel" style="display:grid;gap:14px">
+    <label class="field" for="studentName">Your full name
+      <input type="text" id="studentName" autocomplete="name" placeholder="First and last name">
+    </label>
+    <div class="row"><button class="btn gold" id="startBtn">Start Part 1</button><span class="muted" id="nameNote"></span></div>
+  </div>
+</section>
+
+<section id="part1" class="wrap" style="gap:16px" hidden>
+  <div>
+    <div class="eyebrow">Part 1 of 3</div>
+    <h2>Sort the shopping list</h2>
+    <p class="muted">Place each of the shop's 10 purchases in a Kraljic box. Read the supply notes closely.</p>
+  </div>
+  <div class="items" id="items"></div>
+  <div class="row"><span class="muted" id="sortCount">0 of 10 sorted</span><button class="btn gold" id="checkSort" disabled>Check my sorting</button></div>
+  <div class="row" id="toPart2Row" hidden><span class="big" id="sortScore"></span><button class="btn gold" id="toPart2">Go to Part 2</button></div>
+</section>
+
+<section id="part2" class="wrap" style="gap:16px" hidden>
+  <div>
+    <div class="eyebrow">Part 2 of 3</div>
+    <h2>Tapioca supplier showdown</h2>
+    <p class="muted">Tapioca pearls are your shop's most important purchase, about 2,000 kg a month. Three suppliers want your business. Scores run from 1 to 10. You decide how much each criterion matters.</p>
+  </div>
+  <div class="sups" id="sups"></div>
+  <div class="panel" style="display:grid;gap:12px">
+    <h3>Set your weights</h3>
+    <p class="muted" style="font-size:.92rem">Weights must add up to 100%. Think about what matters most for a boba shop that ran out of pearls last spring.</p>
+    <div class="weights">
+      <div class="wt"><label for="wPrice">Price</label><span class="val"><span id="vPrice">34</span>%</span><input type="range" id="wPrice" min="0" max="100" step="5" value="35"></div>
+      <div class="wt"><label for="wQual">Quality</label><span class="val"><span id="vQual">33</span>%</span><input type="range" id="wQual" min="0" max="100" step="5" value="35"></div>
+      <div class="wt"><label for="wDel">Delivery</label><span class="val"><span id="vDel">33</span>%</span><input type="range" id="wDel" min="0" max="100" step="5" value="30"></div>
+    </div>
+    <p class="sum" id="sum"></p>
+  </div>
+  <div class="panel" style="display:grid;gap:10px">
+    <h3>Choose your sourcing plan</h3>
+    <div class="choice" id="plans"></div>
+  </div>
+  <div class="row"><button class="btn gold" id="toShock" disabled>Lock in my plan</button></div>
+</section>
+
+<section id="part3" class="wrap" style="gap:16px" hidden>
+  <div>
+    <div class="eyebrow">Part 3 of 3 · Results</div>
+    <h2 id="who"></h2>
+  </div>
+  <div class="shock" id="shock"></div>
+  <div class="kpis" id="kpis"></div>
+  <div class="panel">
+    <h3 style="margin-bottom:8px">Your supplier scorecard</h3>
+    <div class="tablewrap"><table id="scoreTable"></table></div>
+  </div>
+  <div class="panel">
+    <h3 style="margin-bottom:8px">Your Kraljic sorting</h3>
+    <div class="tablewrap"><table id="sortTable"></table></div>
+  </div>
+  <div class="panel"><p class="shot">Take a screenshot of this whole page for your Sim 3 submission.</p></div>
+</section>
+
+</div>
+
+<script>
+(function(){
+  const Q={lev:'Leverage',str:'Strategic',non:'Noncritical',bot:'Bottleneck'};
+  const ITEMS=[
+    {n:'Tapioca pearls',s:180000,note:'Only two suppliers meet your quality standard, and most pearls come from Taiwan. A port backup in 2021 caused a national shortage.',a:'str',why:'Huge spend and very few good sources. This needs a close, long term partnership.'},
+    {n:'Black and green tea leaves',s:90000,note:'Dozens of tea suppliers in several countries sell the grades you use. Prices are easy to compare.',a:'lev',why:'Big spend but many sellers. Use your buying power to negotiate.'},
+    {n:'Milk and creamer',s:70000,note:'Many local dairies and food distributors deliver several times a week.',a:'lev',why:'Big spend and lots of choice. A classic leverage item.'},
+    {n:'Printed plastic cups',s:60000,note:'Many cup makers can print your logo. Switching takes about two weeks.',a:'lev',why:'Big spend, easy to switch suppliers. Bid it out.'},
+    {n:'Brown sugar syrup',s:45000,note:'Your signature drink uses a special black sugar from Okinawa. One importer carries it, and bad harvests cause shortages.',a:'str',why:'Spend is above $40,000 and there is only one source. That makes it strategic.'},
+    {n:'Passion fruit purée',s:12000,note:'Only one supplier\'s purée matches your recipe, and it is seasonal.',a:'bot',why:'Small spend but hard to replace. Keep extra stock and look for a backup.'},
+    {n:'Cup sealing film',s:8000,note:'Your sealing machine only accepts film rolls from one brand.',a:'bot',why:'Cheap, but if it runs out you cannot sell drinks. Classic bottleneck.'},
+    {n:'Wide straws',s:15000,note:'Sold by many restaurant supply stores and online sellers.',a:'non',why:'Small spend and easy to buy anywhere.'},
+    {n:'Napkins',s:3000,note:'Available at any restaurant supply store.',a:'non',why:'Small spend, many sources. Do not waste time here.'},
+    {n:'Cleaning supplies',s:4000,note:'Bought at warehouse clubs or online.',a:'non',why:'Small spend, easy to buy. Use a p card.'}
+  ];
+  const SUPS=[
+    {id:'pv',n:'Pearl Valley',loc:'Taiwan',price:'$1.95 per kg delivered',qual:'Best chew, 1 bad batch in 50',del:'On time 85%, 6 week lead time',sc:{p:8,q:9,d:6}},
+    {id:'sc',n:'SoCal Tapioca',loc:'Los Angeles',price:'$2.80 per kg delivered',qual:'Good, 1 bad batch in 25',del:'On time 98%, 3 day lead time',sc:{p:5,q:7,d:10}},
+    {id:'mk',n:'Mekong Foods',loc:'Vietnam',price:'$1.60 per kg delivered',qual:'Fair, 1 bad batch in 10',del:'On time 75%, 7 week lead time',sc:{p:10,q:5,d:5}}
+  ];
+  const SHOCKS=[
+    {hit:'pv',title:'A typhoon hits Taiwan',text:'Ports in Taiwan close for 3 weeks. Pearl Valley cannot ship.'},
+    {hit:'sc',title:'SoCal Tapioca fails a health inspection',text:'The Los Angeles factory is shut down for 3 weeks while it fixes the problems.'},
+    {hit:'mk',title:'Shipping backlog in Vietnam',text:'A container shortage delays every shipment from Vietnam by 3 weeks.'}
+  ];
+  const WEEKLY_REV=18000; // 3,000 pearl drinks a week at $6
+  const DUAL_COST=9000;    // yearly premium for splitting volume
+
+  const $=id=>document.getElementById(id);
+  const money=v=>'$'+Math.round(v).toLocaleString('en-US');
+  const show=id=>{['intro','part1','part2','part3'].forEach(s=>$(s).hidden=s!==id);window.scrollTo(0,0);};
+  let name='', sort={}, sortScore=0, plan=null, backup=null;
+
+  // Part 1
+  const itemsEl=$('items');
+  ITEMS.forEach((it,i)=>{
+    const d=document.createElement('div'); d.className='item'; d.id='item-'+i;
+    d.innerHTML='<span class="iname">'+it.n+'</span><span class="spend">'+money(it.s)+' a year</span><span class="note">'+it.note+'</span>'+
+      '<div class="qbtns">'+Object.keys(Q).map(k=>'<button type="button" class="qb" id="qb-'+i+'-'+k+'" aria-pressed="false">'+Q[k]+'</button>').join('')+'</div><div class="fb" hidden></div>';
+    itemsEl.appendChild(d);
+    Object.keys(Q).forEach(k=>$('qb-'+i+'-'+k).addEventListener('click',()=>{ if($('toPart2Row').hidden===false) return; sort[i]=k; syncSort(); }));
+  });
+  function syncSort(){
+    let n=0;
+    ITEMS.forEach((it,i)=>{
+      Object.keys(Q).forEach(k=>$('qb-'+i+'-'+k).setAttribute('aria-pressed',sort[i]===k?'true':'false'));
+      $('item-'+i).classList.toggle('done',!!sort[i]); if(sort[i]) n++;
+    });
+    $('sortCount').textContent=n+' of 10 sorted';
+    $('checkSort').disabled=n!==10;
+  }
+  $('checkSort').addEventListener('click',()=>{
+    sortScore=0;
+    ITEMS.forEach((it,i)=>{
+      const right=sort[i]===it.a; if(right) sortScore++;
+      const fb=$('item-'+i).querySelector('.fb'); fb.hidden=false;
+      fb.className='fb '+(right?'right':'wrong');
+      fb.innerHTML=(right?'<b class="ok">Correct.</b> ':'<b class="no">Not quite. It is '+Q[it.a]+'.</b> ')+it.why;
+      Object.keys(Q).forEach(k=>$('qb-'+i+'-'+k).disabled=true);
+    });
+    $('checkSort').hidden=true; $('sortCount').hidden=true;
+    $('toPart2Row').hidden=false; $('sortScore').textContent=sortScore+' of 10 correct';
+    $('toPart2Row').scrollIntoView({block:'center'});
+  });
+
+  // Part 2
+  function weights(){return {p:+$('wPrice').value,q:+$('wQual').value,d:+$('wDel').value};}
+  function scoreSup(s,w){return (s.sc.p*w.p+s.sc.q*w.q+s.sc.d*w.d)/100;}
+  function ranked(w){return SUPS.map(s=>({s,v:scoreSup(s,w)})).sort((a,b)=>b.v-a.v);}
+  function renderSups(){
+    const w=weights(), sum=w.p+w.q+w.d;
+    $('vPrice').textContent=w.p;$('vQual').textContent=w.q;$('vDel').textContent=w.d;
+    const okSum=sum===100;
+    $('sum').innerHTML='Total '+sum+'% '+(okSum?'<span class="ok">Ready</span>':'<span class="no">Must equal 100%</span>');
+    const r=ranked(w), top=r[0].s.id, tie=Math.abs(r[0].v-r[1].v)<1e-9;
+    $('sups').innerHTML=SUPS.map(s=>{
+      const v=scoreSup(s,w);
+      return '<div class="sup'+(okSum&&s.id===top&&!tie?' win':'')+'"><span class="sname">'+s.n+'</span><span class="muted">'+s.loc+'</span>'+
+        '<dl><dt>Price</dt><dd>'+s.price+'</dd><dt>Quality</dt><dd>'+s.qual+'</dd><dt>Delivery</dt><dd>'+s.del+'</dd></dl>'+
+        '<table><tr><th>Price</th><th>Quality</th><th>Delivery</th></tr><tr><td>'+s.sc.p+'</td><td>'+s.sc.q+'</td><td>'+s.sc.d+'</td></tr></table>'+
+        '<div><span class="muted" style="font-size:.85rem;text-transform:uppercase;letter-spacing:.05em">Weighted score</span><div class="big">'+(okSum?v.toFixed(2):'–')+'</div></div></div>';
+    }).join('');
+    renderPlans(okSum&&!tie?r:null, tie&&okSum);
+  }
+  function renderPlans(r,tie){
+    const el=$('plans');
+    if(!r){ el.innerHTML='<p class="muted">'+(tie?'Two suppliers are tied. Adjust your weights to break the tie.':'Set weights that add up to 100% to see your winner.')+'</p>'; plan=null; $('toShock').disabled=true; return; }
+    const win=r[0].s;
+    const opts=[{id:'single',t:'Single source',d:'Buy 100% from '+win.n+'. Simplest to manage and no extra cost, but no backup if something goes wrong.'}]
+      .concat(r.slice(1).map(x=>({id:'dual-'+x.s.id,t:'Dual source with '+x.s.n,d:'Buy 70% from '+win.n+' and 30% from '+x.s.n+'. Costs about '+money(DUAL_COST)+' more a year, but you have a backup.'})));
+    if(plan && !opts.some(o=>o.id===plan)) plan=null;
+    el.innerHTML=opts.map(o=>'<button type="button" class="opt" id="opt-'+o.id+'" aria-pressed="'+(plan===o.id)+'"><b>'+o.t+'</b><br><span>'+o.d+'</span></button>').join('');
+    opts.forEach(o=>$('opt-'+o.id).addEventListener('click',()=>{plan=o.id;renderPlans(ranked(weights()),false);}));
+    $('toShock').disabled=!plan;
+  }
+  ['wPrice','wQual','wDel'].forEach(id=>$(id).addEventListener('input',renderSups));
+
+  // Part 3
+  $('toShock').addEventListener('click',()=>{
+    const w=weights(), r=ranked(w), win=r[0].s;
+    const dual=plan.startsWith('dual-'), back=dual?SUPS.find(s=>s.id===plan.slice(5)):null;
+    const shock=SHOCKS[Math.floor(Math.random()*SHOCKS.length)];
+    let lost=0, extra=dual?DUAL_COST:0, story='';
+    if(shock.hit===win.id){
+      if(dual){ lost=WEEKLY_REV*0.7; story='Your main supplier went down, but '+back.n+' was already shipping 30% of your pearls. Within a week they ramped up to cover everything. You lost about one week of 70% of your pearl drinks.'; }
+      else { lost=WEEKLY_REV*3; story='Your only supplier went down. With no backup, the shop ran out of pearls for 3 weeks. Customers went to other boba shops.'; }
+    } else if(dual && back && shock.hit===back.id){
+      lost=0; story='The problem hit your backup, '+back.n+'. Your main supplier, '+win.n+', covered the gap. No pearl drinks were lost, but you paid the dual source premium.';
+    } else {
+      lost=0; story='The problem hit a supplier you do not use. Your pearls kept flowing.'+(dual?' You paid the dual source premium this year as insurance.':' Single sourcing saved you money this time.');
+    }
+    const total=lost+extra;
+    $('who').textContent=name+'’s buying report';
+    const sh=$('shock'); sh.className='shock'+(lost===0?' good':'');
+    sh.innerHTML='<span class="eyebrow">Surprise supply shock</span><h3>'+shock.title+'</h3><p>'+shock.text+'</p><p><b>'+story+'</b></p>';
+    $('kpis').innerHTML=[
+      {k:'Kraljic sorting',v:sortScore+' / 10'},
+      {k:'Your supplier',v:win.n},
+      {k:'Plan',v:dual?'Dual, 70/30':'Single'},
+      {k:'Lost drink sales',v:money(lost)},
+      {k:'Dual source cost',v:money(extra)},
+      {k:'Total cost of the shock',v:money(total)}
+    ].map(s=>'<div class="stat"><div class="k">'+s.k+'</div><div class="v">'+s.v+'</div></div>').join('');
+    $('scoreTable').innerHTML='<tr><th>Supplier</th><th>Price ('+w.p+'%)</th><th>Quality ('+w.q+'%)</th><th>Delivery ('+w.d+'%)</th><th>Weighted</th></tr>'+
+      r.map((x,i)=>'<tr><td>'+(i===0?'<b>'+x.s.n+'</b> (winner)':x.s.n)+'</td><td>'+x.s.sc.p+'</td><td>'+x.s.sc.q+'</td><td>'+x.s.sc.d+'</td><td><b>'+x.v.toFixed(2)+'</b></td></tr>').join('');
+    $('sortTable').innerHTML='<tr><th>Item</th><th>Your box</th><th>Answer</th></tr>'+
+      ITEMS.map((it,i)=>'<tr><td>'+it.n+'</td><td class="'+(sort[i]===it.a?'ok':'no')+'">'+Q[sort[i]]+'</td><td>'+Q[it.a]+'</td></tr>').join('');
+    show('part3');
+  });
+
+  $('startBtn').addEventListener('click',()=>{
+    name=$('studentName').value.trim();
+    if(name.split(/\s+/).length<2){$('nameNote').textContent='Please enter your first and last name.';$('studentName').focus();return;}
+    show('part1');
+  });
+  $('toPart2').addEventListener('click',()=>{renderSups();show('part2');});
+})();
+</script>
+</body>
+</html>
